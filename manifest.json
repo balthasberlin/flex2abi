@@ -1,0 +1,19 @@
+{
+    "name": "Flex2Abi – KI-Lernassistent",
+    "short_name": "Flex2Abi",
+    "description": "Stimme aufnehmen, transkribieren und intelligent zusammenfassen. Dein Abi-Assistent.",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait",
+    "theme_color": "#0b0c10",
+    "background_color": "#0b0c10",
+    "icons": [
+        {
+            "src": "icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

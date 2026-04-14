@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flex2Abi - Voice to Smart Summary</title>
+    <meta name="description" content="Stimme aufnehmen, transkribieren und intelligent zusammenfassen. Dein KI-Lernassistent fürs Abitur.">
+    <meta name="theme-color" content="#0b0c10">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Flex2Abi">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-512.png">
+    <link rel="icon" type="image/png" href="icons/icon-512.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-text">FLEX2ABI</div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-view="recorder">
+                    <span class="nav-icon">🔴</span>
+                    <span class="nav-label">Aufnahme</span>
+                </button>
+                <button class="nav-item" data-view="library">
+                    <span class="nav-icon">📚</span>
+                    <span class="nav-label">Bibliothek</span>
+                </button>
+                <button class="nav-item" data-view="deadlines">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-label">Termine</span>
+                </button>
+                <button class="nav-item" data-view="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Optionen</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-cloud" id="cloud-status-container">
+                <button class="nav-item cloud-btn" id="cloud-login-btn">
+                    <span class="nav-icon">☁️</span>
+                    <span class="nav-label">Login / Sync</span>
+                </button>
+            </div>
+
+            <div class="sidebar-footer">
+                <p>Flex2Abi Hub v2.0</p>
+                <div id="recording-indicator" class="pulse-dot" style="display:none;"></div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- HEADER (Dynamic Title) -->
+            <header class="view-header">
+                <h1 id="view-title">Aufnahme-Studio</h1>
+                <p id="view-subtitle" class="subtitle">Stimme aufnehmen, transkribieren und intelligent zusammenfassen.</p>
+            </header>
+
+            <!-- VIEW: RECORDER -->
+            <div id="view-recorder" class="view-container">
+                <!-- Recording Card -->
+                <section class="card fade-in">
+                    <div class="visualizer-container" id="visualizer"></div>
+                    <div class="controls">
+                        <button id="record-btn" class="record-btn" title="Aufnahme starten/stoppen">
+                            <svg id="mic-icon" viewBox="0 0 24 24">
+                                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                            </svg>
+                            <svg id="stop-icon" viewBox="0 0 24 24" style="display:none;">
+                                <path d="M6 6h12v12H6z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <span id="status-text" style="color: var(--text-muted); font-weight: 600;">Bereit zur Aufnahme</span>
+                    </div>
+                </section>
+
+                <div class="sections-grid">
+                    <!-- Transcript Section -->
+                    <section class="card content-area fade-in" style="animation-delay: 0.1s; text-align: center;">
+                        <h2 style="justify-content: center;">Transkript</h2>
+                        <div id="ai-suggestion-badge" style="display: none;" title="Klicken um Fach direkt zuzuweisen"></div>
+                        
+                        <div class="controls" style="padding: 0; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            <button id="diarize-btn" class="secondary-btn" title="Nutzt Groq Whisper für eine extrem präzise Transkription der Audioaufnahme."> Hochpräzise Transkription (Whisper)</button>
+                        </div>
+                        
+                        <div id="transcript" class="transcript-text">Noch keine Aufnahme vorhanden...</div>
+                    </section>
+
+                    <!-- Summary Section -->
+                    <section class="card content-area fade-in" style="animation-delay: 0.2s;">
+                        <div class="card-header">
+                            <h2>Zusammenfassung</h2>
+                            <button id="discard-btn" class="secondary-btn" style="border-color: var(--danger); color: var(--danger); display: none;">Verwerfen</button>
+                            <button id="summarize-btn" class="secondary-btn" disabled>Zusammenfassen</button>
+                        </div>
+                        <div id="summary-content" class="summary-container">
+                            <p style="color: var(--text-muted);">Das Transkript wird hier intelligent zusammengefasst.</p>
+                        </div>
+                    </section>
+                </div>
+
+            </div>
+
+            <!-- VIEW: LIBRARY -->
+            <div id="view-library" class="view-container" style="display:none">
+                <section class="card library-controls fade-in">
+                    <div class="search-wrap">
+                        <span class="search-icon">Suche:</span>
+                        <input type="text" id="library-search" placeholder="Suche in allen Transkripten und Zusammenfassungen...">
+                    </div>
+                </section>
+
+                <div id="library-grid" class="subject-grid">
+                    <!-- Subject cards injected by JS -->
+                </div>
+
+                <div id="subject-detail-view" style="display:none; margin-top: 2rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+                        <button id="back-to-library" class="secondary-btn" style="padding: 0.4rem 0.8rem;">← Zurück</button>
+                        <h2 id="current-subject-title" style="margin: 0;">Fach: Biologie</h2>
+                    </div>
+                    <div id="subject-items-container"></div>
+                </div>
+
+                <!-- History Section (Relocated) -->
+                <div class="sections-grid" style="grid-template-columns: 1fr; margin-top: 4rem;">
+                    <section class="card fade-in">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h2 style="margin-bottom: 0;">Kompletter Verlauf</h2>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">Chronologische Liste</span>
+                        </div>
+                        <div id="history-container">
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Lädt Archiv...</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <!-- TERMIN-RADAR / DEADLINES VIEW -->
+            <section id="view-deadlines" class="view-container" style="display:none;">
+                <div id="deadline-list" class="deadline-grid">
+                    <div class="card" style="text-align: center; padding: 3rem;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;">📅</div>
+                        <h3>Noch keine Termine erfasst</h3>
+                        <p style="color: var(--text-muted);">Sobald die KI in deinen Aufnahmen Fristen findet, erscheinen sie hier chronologisch sortiert.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: SETTINGS -->
+            <section id="view-settings" class="view-container" style="display:none;">
+                <div class="sections-grid" style="grid-template-columns: 1fr; max-width: 800px; margin: 0 auto;">
+                    <div class="card fade-in">
+                        <h2 style="margin-bottom: 1.5rem;">System-Einstellungen</h2>
+                        
+                        <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--glass-border);">
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 0.2rem;">Geräuschunterdrückung & Rauschfilter</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">Filtert störende Hintergrundgeräusche heraus. Ausschalten für RAW-Audio Qualität bei guten Mikrofonen.</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-noise-suppression" checked>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                        <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--glass-border);">
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 0.2rem;">Intelligenter Fehler-Filter (KI)</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">Erfasst in der Zusammenfassung ausschließlich inhaltlich korrekte Antworten von Schülern.</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-filter-only" checked>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                        <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0;">
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 0.2rem;">Cloud Audio-Backup (24h)</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">Erlaubt das nachträgliche Anhören der Audio-Aufnahmen im Archiv. Löscht sich automatisch. (Verbraucht Datenvolumen)</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-audio-backup">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Master Summary Modal -->
+    <div id="master-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin-bottom: 0; color: #ffd700;"> Abitur-Lernzettel</h2>
+                <button id="close-modal-btn" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.5rem;">&times;</button>
+            </div>
+            <div id="master-modal-body" class="summary-container" style="max-height: 60vh; overflow-y: auto;">
+                <p>Generiere ultimativen Lernzettel...</p>
+            </div>
+            <div style="text-align: right; margin-top: 1.5rem;"></div>
+        </div>
+    </div>
+
+    <!-- Cloud Login Modal -->
+    <div id="cloud-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content card" style="max-width: 400px; padding: 2rem;">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;"></div>
+                <h2 style="margin: 0;">Cloud-Sync</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Sichere deine Mitschriften & teile sie mit deinen Geräten.</p>
+            </div>
+            
+            <div id="auth-form">
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">E-Mail</label>
+                    <input type="email" id="auth-email" class="modern-input" style="width: 100%; box-sizing: border-box;" placeholder="name@beispiel.de">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Passwort</label>
+                    <input type="password" id="auth-password" class="modern-input" style="width: 100%; box-sizing: border-box;" placeholder="••••••••">
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                    <button id="auth-login-btn" class="record-btn" style="width: 100%; height: 50px; border-radius: 12px; font-size: 1rem;">Einloggen</button>
+                    <button id="auth-signup-btn" class="secondary-btn" style="width: 100%;">Neuen Account erstellen</button>
+                </div>
+            </div>
+
+            <div id="auth-status-msg" style="margin-top: 1.5rem; text-align: center; font-size: 0.85rem; display: none;"></div>
+
+            <div style="text-align: center; margin-top: 2rem;">
+                <button id="close-cloud-btn" style="background: none; border: none; color: var(--text-muted); cursor: pointer; text-decoration: underline; font-size: 0.8rem;">Vielleicht später</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js?v=2"></script>
+    <!-- Auth Guard: redirect to login.html if not logged in -->
+    <script>
+        (async () => {
+            if (typeof CONFIG === 'undefined' || !CONFIG.SUPABASE_URL || CONFIG.SUPABASE_URL.includes('DEINE')) return;
+            try {
+                const { createClient } = window.supabase;
+                const _sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+                const { data: { session } } = await _sb.auth.getSession();
+                if (!session) {
+                    document.body.style.display = 'none';
+                    window.location.replace('login.html');
+                }
+            } catch (e) {
+                // If check fails silently, allow app to load
+                console.warn('Auth guard error:', e);
+            }
+        })();
+    </script>
+    <script src="audio-engine.js?v=3"></script>
+    <script src="ai-service.js?v=3"></script>
+    <script src="storage-service.js?v=3"></script>
+    <script src="cloud-sync.js?v=3"></script>
+    <script src="ui-renderer.js?v=3"></script>
+    <script src="ui-actions.js?v=3"></script>
+    <script src="app.js?v=5"></script>
+    <script>
+        // PWA: Service Worker registrieren
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('✅ Service Worker registriert:', reg.scope))
+                    .catch(err => console.warn('Service Worker Fehler:', err));
+            });
+        }
+    </script>
+</body>
+
+</html>

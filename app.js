@@ -1,0 +1,497 @@
+/**
+ * Flex2Abi - Core Entry Point
+ * Coordinating UI events and delegating tasks to specialized services.
+ */
+
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DOM ELEMENTS ---
+    const recordBtn = document.getElementById('record-btn');
+    const summarizeBtn = document.getElementById('summarize-btn');
+    const transcriptDiv = document.getElementById('transcript');
+    const summaryDiv = document.getElementById('summary-content');
+    const statusText = document.getElementById('status-text');
+    const visualizer = document.getElementById('visualizer');
+    const micIcon = document.getElementById('mic-icon');
+    const stopIcon = document.getElementById('stop-icon');
+    const aiSuggestionBadge = document.getElementById('ai-suggestion-badge');
+    const diarizeBtn = document.getElementById('diarize-btn');
+    const discardBtn = document.getElementById('discard-btn');
+    const navItems = document.querySelectorAll('.nav-item');
+    const views = document.querySelectorAll('.view-container');
+    const viewTitle = document.getElementById('view-title');
+    const viewSubtitle = document.getElementById('view-subtitle');
+    const recordingIndicator = document.getElementById('recording-indicator');
+    const libraryGrid = document.getElementById('library-grid');
+    const librarySearch = document.getElementById('library-search');
+    const filterToggle = document.getElementById('toggle-filter-only');
+    const backupToggle = document.getElementById('toggle-audio-backup');
+    const noiseToggle = document.getElementById('toggle-noise-suppression');
+
+    // --- GLOBAL APP STATE ---
+    window.APP_STATE = {
+        isRecording: false,
+        fullTranscript: '',
+        audioChunks: [],
+        audioBlob: null,
+        currentSessionId: Date.now(),
+        mediaRecorder: null,
+        recognition: null,
+        audioContext: null, // For filters
+        currentStream: null,
+        wakeLock: null,
+        syncDirty: false
+    };
+
+    // --- INITIALIZATION ---
+    setupNavigation();
+    setupSpeechRecognition();
+    setupVisualizerBars();
+
+    
+    // Global UI Access for Cloud Sync
+    window.APP_UI = {
+        renderHistory: window.UIRenderer.renderHistory,
+        renderLibraryItems: window.UIRenderer.renderLibraryItems,
+        refreshAll: () => {
+            if (window.UIRenderer.renderHistory) window.UIRenderer.renderHistory();
+            if (window.UIRenderer.renderLibraryItems) window.UIRenderer.renderLibraryItems();
+            if (window.StorageService && window.StorageService.renderDeadlines) {
+                window.StorageService.renderDeadlines(document.getElementById('deadline-list'));
+            }
+        }
+    };
+
+    if (window.APP_UI) {
+        window.APP_UI.refreshAll();
+    }
+
+    // Toggle Initialization
+    const initToggle = (toggleElement, storageKey, defaultValue = 'true') => {
+        if (!toggleElement) return;
+        const savedState = localStorage.getItem(storageKey);
+        toggleElement.checked = savedState !== null ? (savedState === 'true') : (defaultValue === 'true');
+        // Initialer save für defaults falls noch nicht existent
+        if (savedState === null) localStorage.setItem(storageKey, defaultValue);
+        
+        toggleElement.addEventListener('change', () => {
+            localStorage.setItem(storageKey, toggleElement.checked);
+        });
+    };
+
+    initToggle(filterToggle, 'flex2abi_filter_only', 'true');
+    initToggle(backupToggle, 'flex2abi_audio_backup', 'false');
+    initToggle(noiseToggle, 'flex2abi_noise_suppression', 'true');
+
+    // --- NAVIGATION LOGIC ---
+    function setupNavigation() {
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const targetView = item.getAttribute('data-view');
+                switchView(targetView);
+                navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+
+        // Library Back Button
+        const backBtn = document.getElementById('back-to-library');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                document.getElementById('subject-detail-view').style.display = 'none';
+                libraryGrid.style.display = 'grid';
+            });
+        }
+    }
+
+    function switchView(viewId) {
+        views.forEach(v => v.style.display = 'none');
+        const activeView = document.getElementById('view-' + viewId);
+        if (activeView) activeView.style.display = 'block';
+
+        if (viewId === 'library') {
+            document.getElementById('subject-detail-view').style.display = 'none';
+            if (librarySearch) librarySearch.value = ''; // Reset ghost input
+            libraryGrid.style.display = 'grid';
+            if (window.UIRenderer.renderLibraryItems) window.UIRenderer.renderLibraryItems();
+            if (window.UIRenderer.renderHistory) window.UIRenderer.renderHistory();
+        } else if (viewId === 'deadlines') {
+            StorageService.renderDeadlines(document.getElementById('deadline-list'));
+        }
+
+        // Update Header Titles
+        const titles = {
+            'recorder': ['Aufnahme-Studio', 'Stimme aufnehmen, transkribieren und intelligent zusammenfassen.'],
+            'library': ['Deine Bibliothek', 'Hier findest du all dein Wissen nach Fächern sortiert.'],
+            'deadlines': ['Termins-Radar', 'Alle Deadlines, Klausuren und Abgaben auf einen Blick.'],
+            'settings': ['System-Einstellungen', 'Konfiguriere Audio-Filter, KI-Verhalten und Cloud-Speicher.']
+        };
+        if (titles[viewId]) {
+            viewTitle.textContent = titles[viewId][0];
+            viewSubtitle.textContent = titles[viewId][1];
+        }
+    }
+
+    // --- SPEECH RECOGNITION ---
+    function setupSpeechRecognition() {
+        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) return;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        window.APP_STATE.recognition = new SpeechRecognition();
+        window.APP_STATE.recognition.continuous = true;
+        window.APP_STATE.recognition.interimResults = true;
+        window.APP_STATE.recognition.lang = 'de-DE';
+
+        window.APP_STATE.recognition.onresult = (event) => {
+            let interimTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    window.APP_STATE.fullTranscript += event.results[i][0].transcript + ' ';
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            transcriptDiv.innerHTML = `<span style="color: var(--text-main)">${window.APP_STATE.fullTranscript}</span><span style="color: var(--text-muted)">${interimTranscript}</span>`;
+            if (window.APP_STATE.fullTranscript.trim().length > 10) summarizeBtn.disabled = false;
+        };
+
+        window.APP_STATE.recognition.onend = () => {
+            if (window.APP_STATE.isRecording) {
+                setTimeout(() => {
+                    if (window.APP_STATE.isRecording) {
+                        try { window.APP_STATE.recognition.start(); } catch(e) {}
+                    }
+                }, 500);
+            }
+        };
+    }
+
+    // --- VISUALIZER SETUP ---
+    function setupVisualizerBars() {
+        if (!visualizer) return;
+        visualizer.innerHTML = '';
+        for (let i = 0; i < 40; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            visualizer.appendChild(bar);
+        }
+    }
+
+    // --- SESSION SAVING ---
+    function saveCurrentSessionToDisk(masterFullText = '') {
+        if (!window.APP_STATE.fullTranscript || window.APP_STATE.fullTranscript.trim() === '') return;
+
+        let folderName = 'Allgemein';
+        let keywords = [];
+        let deadlines = [];
+
+        const existingHistory = window.StorageService.getHistory();
+        const existingSession = existingHistory.find(h => h.id === window.APP_STATE.currentSessionId);
+        
+        let finalSummaryText = masterFullText || (existingSession ? existingSession.masterText : '');
+        let finalSummaryHtml = finalSummaryText ? finalSummaryText.replace(/\n/g, '<br>') : '';
+
+        if (finalSummaryText) {
+            const folderMatch = finalSummaryText.match(/FACH:\s*(.+)/i);
+            if (folderMatch && folderMatch[1]) folderName = folderMatch[1].replace(/\*/g, '').trim();
+            
+            const keywordsMatch = finalSummaryText.match(/SCHLAGWORTE:\s*(.+)/i);
+            if (keywordsMatch && keywordsMatch[1]) keywords = keywordsMatch[1].replace(/\*/g, '').split(',').map(k => k.trim());
+
+            const deadlinesMatch = finalSummaryText.match(/### 📅 ZENTRALE DEADLINES & TERMINE[\s\S]*/i);
+            if (deadlinesMatch && deadlinesMatch[0]) {
+                const parts = deadlinesMatch[0].split('\n');
+                for (let line of parts) {
+                    const dMatch = line.match(/- \[?(\d{2}\.\d{2}\.\d{4})\]? - (.+)/);
+                    if (dMatch) deadlines.push({ date: dMatch[1], task: dMatch[2].replace(/\*/g, '').trim() });
+                }
+            }
+        }
+
+        const sessionData = {
+            id: window.APP_STATE.currentSessionId,
+            date: existingSession ? existingSession.date : new Date().toLocaleDateString('de-DE') + ', ' + new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+            transcript: window.APP_STATE.fullTranscript,
+            summaryHtml: finalSummaryHtml,
+            masterText: finalSummaryText,
+            folder: folderName,
+            keywords: keywords,
+            deadlines: deadlines
+        };
+
+        window.StorageService.saveSession(sessionData);
+
+        if (window.APP_UI && window.APP_UI.refreshAll) {
+            window.APP_UI.refreshAll();
+        }
+    }
+
+    // --- RECORDING ACTIONS ---
+    recordBtn.addEventListener('click', async () => {
+        if (!window.APP_STATE.isRecording) {
+            await startFullRecording();
+        } else {
+            await stopFullRecording();
+        }
+    });
+
+    async function startFullRecording() {
+        // Save current if exists
+        if (window.APP_STATE.fullTranscript.trim()) {
+            saveCurrentSessionToDisk();
+        }
+
+        window.APP_STATE.currentSessionId = Date.now();
+        window.APP_STATE.fullTranscript = '';
+        aiSuggestionBadge.style.display = 'none';
+        transcriptDiv.textContent = '';
+        
+        try {
+            statusText.textContent = 'Verbinde...';
+            recordBtn.classList.add('recording');
+            
+            const constraints = AudioEngine.getConstraints();
+            window.APP_STATE.currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            
+            const { filteredStream, context } = await AudioEngine.setupFilters(window.APP_STATE.currentStream);
+            window.APP_STATE.audioContext = context;
+
+            window.APP_STATE.isRecording = true;
+            recordingIndicator.style.display = 'block';
+            micIcon.style.display = 'none';
+            stopIcon.style.display = 'block';
+            statusText.textContent = 'Aufnahme läuft (Rauschfilter aktiv)...';
+            statusText.style.color = 'var(--accent-secondary)';
+
+            AudioEngine.initVisualizer(window.APP_STATE.currentStream, document.querySelectorAll('.bar'));
+            await AudioEngine.requestWakeLock();
+
+            // MediaRecorder Setup
+            const options = { audioBitsPerSecond: 24000 };
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
+            
+            window.APP_STATE.mediaRecorder = new MediaRecorder(filteredStream, options);
+            window.APP_STATE.audioChunks = [];
+            window.APP_STATE.mediaRecorder.ondataavailable = (e) => window.APP_STATE.audioChunks.push(e.data);
+            window.APP_STATE.mediaRecorder.onstop = async () => {
+                window.APP_STATE.audioBlob = new Blob(window.APP_STATE.audioChunks, { type: 'audio/webm' });
+                diarizeBtn.disabled = false;
+                window.APP_STATE.audioContext.close().catch(() => {});
+                
+                // Smart Audio Backup Logic
+                if (backupToggle && backupToggle.checked && window.CloudSync && window.CloudSync.isLoggedIn()) {
+                     let shouldUpload = true;
+                     const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                     if (conn && (conn.type === 'cellular' || (conn.type === undefined && typeof conn.effectiveType === 'string' && (conn.effectiveType.includes('2g') || conn.effectiveType.includes('3g'))))) {
+                         shouldUpload = confirm("Mobilfunknetz erkannt (Möglicher Datenverbrauch). Große Audio-Datei jetzt in die Cloud hochladen?");
+                     }
+                     if (shouldUpload) {
+                         window.UIAction.showVisualFeedback('Sichere Audio...', 'Upload in die Cloud (24h Limit).');
+                         const success = await window.CloudSync.uploadAudio(window.APP_STATE.audioBlob, window.APP_STATE.currentSessionId);
+                         window.UIAction.hideVisualFeedback();
+                         if (!success) alert("Fehler beim Cloud-Upload der Audiodatei.");
+                     }
+                }
+            };
+
+            window.APP_STATE.mediaRecorder.start();
+            if (window.APP_STATE.recognition) window.APP_STATE.recognition.start();
+
+        } catch (err) {
+            handleRecordingError(err);
+        }
+    }
+
+    async function stopFullRecording() {
+        try {
+            if (window.APP_STATE.mediaRecorder && window.APP_STATE.mediaRecorder.state !== 'inactive') window.APP_STATE.mediaRecorder.stop();
+            if (window.APP_STATE.recognition) window.APP_STATE.recognition.stop();
+            if (window.APP_STATE.currentStream) window.APP_STATE.currentStream.getTracks().forEach(t => t.stop());
+            
+            AudioEngine.releaseWakeLock();
+            AudioEngine.stopVisualizer(document.querySelectorAll('.bar'));
+            
+            window.APP_STATE.isRecording = false;
+            recordBtn.classList.remove('recording');
+            micIcon.style.display = 'block';
+            stopIcon.style.display = 'none';
+            statusText.textContent = 'Aufnahme beendet – bereit zur Analyse!';
+            statusText.style.color = 'var(--accent-secondary)';
+            recordingIndicator.style.display = 'none';
+
+            if (window.APP_STATE.fullTranscript.trim().length > 5 || window.APP_STATE.audioBlob) {
+                if (summarizeBtn) summarizeBtn.disabled = false;
+                if (discardBtn) discardBtn.style.display = 'inline-block';
+            }
+        } catch (e) {
+            console.error('Stop error:', e);
+        }
+    }
+
+    // --- DISCARD LOGIC ---
+    if (discardBtn) {
+        discardBtn.addEventListener('click', async () => {
+            if (window.APP_STATE.fullTranscript.length > 0 || window.APP_STATE.audioBlob) {
+                const confirmed = await window.UIAction.showConfirm(
+                    'Aufnahme verwerfen?', 
+                    'Möchtest du das aktuelle Transkript und die Aufnahme wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+                    'Verwerfen'
+                );
+                if (!confirmed) return;
+            }
+            // Reset State
+            window.APP_STATE.fullTranscript = '';
+            window.APP_STATE.audioBlob = null;
+            window.APP_STATE.audioChunks = [];
+            window.APP_STATE.currentSessionId = Date.now();
+            
+            // Clear UI
+            if (transcriptDiv) transcriptDiv.innerHTML = '<p style="color: var(--text-muted);">Noch kein Transkript vorhanden...</p>';
+            if (summaryDiv) summaryDiv.innerHTML = '<p style="color: var(--text-muted);">Das Transkript wird hier intelligent zusammengefasst.</p>';
+            
+            summarizeBtn.disabled = true;
+            diarizeBtn.disabled = true;
+            discardBtn.style.display = 'none';
+            
+            // UI Feedback
+            statusText.textContent = 'Bereit für neue Aufnahme.';
+            statusText.style.color = 'var(--text-muted)';
+        });
+    }
+
+    // Accordion delegation is handled solely by ui-actions.js (global body listener)
+
+    function handleRecordingError(err) {
+        const msg = AudioEngine.getFriendlyErrorMessage(err);
+        statusText.textContent = 'Fehler: ' + msg;
+        statusText.style.color = 'var(--danger)';
+        alert('Mikrofon-Problem: ' + msg);
+        window.APP_STATE.isRecording = false;
+        recordBtn.classList.remove('recording');
+        micIcon.style.display = 'block';
+        stopIcon.style.display = 'none';
+    }
+
+
+    // --- TRANSCRIBE (GROQ WHISPER) ---
+    diarizeBtn.addEventListener('click', async () => {
+        if (!window.APP_STATE.audioBlob) { alert('Keine abgeschlossene Aufnahme gefunden.'); return; }
+
+        window.UIAction.showVisualFeedback('Transkribiere...', 'Nutze Whisper für maximale Präzision.');
+        diarizeBtn.disabled = true;
+
+        try {
+            let data;
+
+            if (CONFIG.EDGE_FUNCTION_URL) {
+                // Sicherer Proxy: Audio als Base64 durch Edge Function
+                const token = window.CloudSync?.getAuthToken ? await window.CloudSync.getAuthToken() : null;
+                if (!token) throw new Error('Nicht eingeloggt – Edge Function benötigt Authentifizierung.');
+
+                const arrayBuffer = await window.APP_STATE.audioBlob.arrayBuffer();
+                const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+                const response = await fetch(CONFIG.EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        action: 'groq-whisper',
+                        payload: { audioBase64: base64 }
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error?.message || err.error || 'Proxy Fehler');
+                }
+                data = await response.json();
+
+            } else {
+                // Fallback: Direkter Groq API-Call
+                const apiKey = CONFIG.GROQ_API_KEY;
+                if (!apiKey) { alert('Groq API Key fehlt!'); return; }
+
+                const formData = new FormData();
+                formData.append('file', window.APP_STATE.audioBlob, 'audio.webm');
+                formData.append('model', 'whisper-large-v3');
+                formData.append('language', 'de');
+
+                const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${apiKey}` },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error?.message || 'API Fehler');
+                }
+                data = await response.json();
+            }
+
+            window.APP_STATE.fullTranscript = data.text;
+            transcriptDiv.innerHTML = `<span style="color: var(--text-main)">${data.text}</span>`;
+            if (window.APP_STATE.fullTranscript.trim().length > 10) {
+                summarizeBtn.disabled = false;
+                if (discardBtn) discardBtn.style.display = 'inline-block';
+            }
+
+            // Deadlines werden im Summarize-Flow korrekt aus dem KI-Output extrahiert.
+
+        } catch (e) {
+            alert('Transkriptions-Fehler (Groq): ' + e.message);
+            diarizeBtn.disabled = false;
+        } finally {
+            window.UIAction.hideVisualFeedback();
+        }
+    });
+
+    // --- SUMMARIZATION ---
+    summarizeBtn.addEventListener('click', async () => {
+        const apiKey = CONFIG.GEMINI_API_KEY;
+        if (!apiKey) { alert('API Key fehlt!'); return; }
+        
+        window.UIAction.showVisualFeedback('Analysiere...', 'Deine Lern-Häppchen werden zubereitet.');
+        summarizeBtn.disabled = true;
+        summaryDiv.innerHTML = '<div class="summary-loading"><div class="loader"></div>Wir bereiten Unterrichts-Häppchen vor...</div>';
+        
+        try {
+            const chunks = AIService.chunkText(window.APP_STATE.fullTranscript);
+            const processedResults = [];
+            const onlyCorrectAnswers = (localStorage.getItem('flex2abi_filter_only') !== 'false');
+
+            for (let i = 0; i < chunks.length; i++) {
+                const prompt = AIService.getChunkPrompt(chunks[i], onlyCorrectAnswers);
+                const result = await AIService.callGemini(prompt, apiKey);
+                processedResults.push(result);
+                
+                // Partial Rendering (Quality of life)
+                if (i === 0) summaryDiv.innerHTML = '';
+                window.UIRenderer.renderChunkInUI(result, chunks[i]);
+                if (i < chunks.length -1) await AIService.wait(10000); 
+            }
+
+            // Master Summary
+            const masterPrompt = AIService.getMasterPrompt(processedResults);
+            const masterFullText = await AIService.callGemini(masterPrompt, apiKey);
+            window.UIRenderer.renderMasterInUI(masterFullText);
+            saveCurrentSessionToDisk(masterFullText);
+
+            // Erkannte Termine sammeln und Bestätigungskarte zeigen
+            const allRawText = [...processedResults, masterFullText].join('\n');
+            const detectedDeadlines = window.AIService.extractDeadlines(allRawText);
+            if (detectedDeadlines.length > 0) {
+                window.UIRenderer.renderDeadlineConfirmations(detectedDeadlines, window.APP_STATE.currentSessionId);
+            }
+
+
+        } catch (e) {
+            summaryDiv.innerHTML = `<p style="color: var(--danger)">Fehler: ${e.message}</p>`;
+        } finally {
+            window.UIAction.hideVisualFeedback();
+            summarizeBtn.disabled = false;
+        }
+    });
+
+});
