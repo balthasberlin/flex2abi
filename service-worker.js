@@ -46,18 +46,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // API-Calls (Supabase, Gemini, Groq) → immer Netzwerk
+    // NUR Anfragen an den eigenen Server abfangen (Assets)
+    // Externe APIs (Supabase, Groq, etc.) direkt vom Browser händeln lassen (stabiler für Uploads)
     if (url.hostname !== location.hostname) {
-        event.respondWith(
-            fetch(event.request).catch(() => {
-                // Offline-Fallback für APIs: nichts cachen
-                return new Response(JSON.stringify({ error: 'Offline – keine Verbindung.' }), {
-                    headers: { 'Content-Type': 'application/json' },
-                    status: 503
-                });
-            })
-        );
-        return;
+        return; // Nicht abfangen
     }
 
     // Statische Dateien → Cache-First, dann Netzwerk

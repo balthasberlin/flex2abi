@@ -1,114 +1,131 @@
 /**
- * Flex2Abi – AI Proxy Edge Function
+ * Flex2Abi – AI Proxy Edge Function (v2.3)
  * Sichere serverseitige Weiterleitung zu Gemini & Groq APIs.
- * API Keys werden als Deno Environment Variables gelesen (nie an Client gesendet).
- * 
- * Deployment:
- *   supabase functions deploy ai-proxy --no-verify-jwt
- * 
- * Secrets setzen:
- *   supabase secrets set GEMINI_API_KEY=AIza...
- *   supabase secrets set GROQ_API_KEY=gsk_...
  */
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-
-const GEMINI_KEY = Deno.env.get('GEMINI_API_KEY')!;
-const GROQ_KEY = Deno.env.get('GROQ_API_KEY')!;
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function verifyUser(authHeader: string): Promise<boolean> {
-    try {
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            global: { headers: { Authorization: authHeader } }
-        });
-        const { data: { user }, error } = await supabase.auth.getUser();
-        return !!user && !error;
-    } catch {
-        return false;
-    }
-}
-
-serve(async (req) => {
-    // CORS Preflight
+Deno.serve(async (req) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
     }
 
-    // Auth Check
+    const GEMINI_KEY = Deno.env.get('GEMINI_API_KEY');
+    const GROQ_KEY = Deno.env.get('GROQ_API_KEY');
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-        return new Response(JSON.stringify({ error: 'Kein Auth-Token. Bitte einloggen.' }), {
+        return new Response(JSON.stringify({ error: 'Kein Auth-Token vorhanden.' }), {
             status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 
-    const isValid = await verifyUser(authHeader);
-    if (!isValid) {
-        return new Response(JSON.stringify({ error: 'Ungültige Session. Bitte neu einloggen.' }), {
-            status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        return new Response(JSON.stringify({ error: 'Systemfehler: Supabase URL/Key fehlen.' }), {
+            status: 500, headers: corsHeaders
         });
     }
 
     try {
-        const { action, payload } = await req.json();
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            global: { headers: { Authorization: authHeader } }
+        });
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-        // --- GEMINI PROXY ---
-        if (action === 'gemini') {
-            const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                }
-            );
-            const data = await res.text();
-            return new Response(data, {
-                status: res.status,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        if (authError || !user) {
+            return new Response(JSON.stringify({ error: 'Session ungültig.' }), {
+                status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
 
-        // --- GROQ WHISPER PROXY ---
-        if (action === 'groq-whisper') {
-            // Client sendet Audio als Base64
-            const audioBytes = Uint8Array.from(atob(payload.audioBase64), c => c.charCodeAt(0));
-            const audioBlob = new Blob([audioBytes], { type: 'audio/webm' });
+        const contentType = req.headers.get('content-type') || '';
+        let action: string;
+        let payload: any = {};
+        let audioFile: File | null = null;
 
-            const formData = new FormData();
-            formData.append('file', audioBlob, 'audio.webm');
-            formData.append('model', 'whisper-large-v3');
-            formData.append('language', 'de');
+        if (contentType.includes('multipart/form-data')) {
+            const formData = await req.formData();
+            action = formData.get('action') as string;
+            audioFile = formData.get('file') as File;
+        } else {
+            const body = await req.json();
+            action = body.action;
+            payload = body.payload;
+        }
+
+        // --- GROQ CHAT / SUMMARIZATION (FREE REPLACEMENT FOR GEMINI) ---
+        if (action === 'groq-chat' || action === 'gemini') {
+            if (!GROQ_KEY) throw new Error('GROQ_API_KEY Secret fehlt.');
+            
+            // Wir nutzen Llama 3.3 70B für höchste Qualität (Free Tier bei Groq)
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${GROQ_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'llama-3.3-70b-versatile',
+                    messages: [
+                        { role: 'system', content: 'Du bist ein hilfreicher Assistent für Abiturienten.' },
+                        { role: 'user', content: payload.prompt || payload.contents?.[0]?.parts?.[0]?.text || 'Hallo' }
+                    ],
+                    temperature: 0.5
+                })
+            });
+            
+            const data = await res.json();
+            
+            // Wir geben das Format so zurück, dass die App es versteht (Mapping auf Gemini-Struktur falls nötig, 
+            // aber wir vereinfachen es hier für den Client)
+            return new Response(JSON.stringify({
+                candidates: [{
+                    content: { parts: [{ text: data.choices?.[0]?.message?.content || 'Fehler bei der Generierung.' }] }
+                }]
+            }), {
+                status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+
+        // --- GROQ WHISPER (TRANSCRIPTION) ---
+        if (action === 'groq-whisper') {
+            if (!GROQ_KEY) throw new Error('GROQ_API_KEY Secret fehlt.');
+            const groqFormData = new FormData();
+            if (audioFile) {
+                groqFormData.append('file', audioFile, 'audio.webm');
+            } else if (payload && payload.audioBase64) {
+                const audioBytes = Uint8Array.from(atob(payload.audioBase64), c => c.charCodeAt(0));
+                groqFormData.append('file', new Blob([audioBytes], { type: 'audio/webm' }), 'audio.webm');
+            } else {
+                throw new Error('Keine Audio-Daten gefunden.');
+            }
+            groqFormData.append('model', 'whisper-large-v3');
+            groqFormData.append('language', 'de');
 
             const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${GROQ_KEY}` },
-                body: formData
+                body: groqFormData
             });
-            const data = await res.text();
-            return new Response(data, {
-                status: res.status,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            return new Response(await res.text(), {
+                status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
 
-        return new Response(JSON.stringify({ error: 'Unbekannte Action: ' + action }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        return new Response(JSON.stringify({ error: 'Unbekannte Action.' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
     } catch (e) {
-        return new Response(JSON.stringify({ error: 'Proxy-Fehler: ' + e.message }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        return new Response(JSON.stringify({ error: e.message }), {
+            status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 });

@@ -76,8 +76,24 @@ window.StorageService = (function() {
             let history = JSON.parse(localStorage.getItem('ai_record_history') || '[]');
             history = history.filter(h => h.id !== id);
             localStorage.setItem('ai_record_history', JSON.stringify(history));
+            
+            // In die Lösch-Warteschlange für Cloud-Sync aufnehmen
+            let deletedQueue = JSON.parse(localStorage.getItem('ai_record_deleted') || '[]');
+            if (!deletedQueue.includes(id)) {
+                deletedQueue.push(id);
+                localStorage.setItem('ai_record_deleted', JSON.stringify(deletedQueue));
+            }
+
             markDirty();
             return history;
+        },
+
+        getDeletedQueue: () => JSON.parse(localStorage.getItem('ai_record_deleted') || '[]'),
+
+        clearDeletedQueue: (idsToRemove) => {
+            let queue = JSON.parse(localStorage.getItem('ai_record_deleted') || '[]');
+            queue = queue.filter(id => !idsToRemove.includes(id));
+            localStorage.setItem('ai_record_deleted', JSON.stringify(queue));
         },
 
         updateFolder: (id, newFolder) => {

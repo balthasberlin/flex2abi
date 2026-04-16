@@ -90,9 +90,27 @@
         if (!currentUser || !supabase) return;
         
         // A. Upload local new items to Cloud in BATCH (Nur bei Änderungen)
-        const localHistory = JSON.parse(localStorage.getItem('ai_record_history') || '[]');
-        const needsUpload = (!initialSyncDone || (window.APP_STATE && window.APP_STATE.syncDirty));
+        const localHistory = window.StorageService.getHistory();
+        const deletedQueue = window.StorageService.getDeletedQueue();
+        const needsUpload = (!initialSyncDone || (window.APP_STATE && window.APP_STATE.syncDirty) || deletedQueue.length > 0);
         
+        // --- 1. HANDLE DELETIONS ---
+        if (deletedQueue.length > 0) {
+            console.log('Cloud Sync: Lösche ' + deletedQueue.length + ' Einträge aus der Cloud...');
+            const { error: delError } = await supabase
+                .from('recordings')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .in('session_id', deletedQueue);
+            
+            if (!delError) {
+                window.StorageService.clearDeletedQueue(deletedQueue);
+            } else {
+                console.error('Cloud Sync Deletion Fehler:', delError);
+            }
+        }
+
+        // --- 2. UPSERT NEW/UPDATED ITEMS ---
         if (localHistory.length > 0 && needsUpload) {
             console.log('Cloud Sync: Lade lokale Änderungen hoch...');
             const upsertData = localHistory.map(item => ({
@@ -124,8 +142,12 @@
         if (!error && cloudData) {
             let mergedHistory = [...localHistory];
             let dataChanged = false;
+            const currentDeleted = window.StorageService.getDeletedQueue();
             
             cloudData.forEach(cloudItem => {
+                // Falls das Item gerade gelöscht wurde (aber Cloud-Delete noch nicht durch ist), ignorieren
+                if (currentDeleted.includes(cloudItem.session_id)) return;
+
                 const localIndex = mergedHistory.findIndex(h => h.id === cloudItem.session_id);
                 if (localIndex === -1) {
                     // Item existiert lokal nicht → von Cloud hinzufügen

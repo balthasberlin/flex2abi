@@ -382,28 +382,33 @@ document.addEventListener('DOMContentLoaded', () => {
             let data;
 
             if (CONFIG.EDGE_FUNCTION_URL) {
-                // Sicherer Proxy: Audio als Base64 durch Edge Function
+                // Sicherer Proxy: Audio per FormData (Binär) durch Edge Function
                 const token = window.CloudSync?.getAuthToken ? await window.CloudSync.getAuthToken() : null;
                 if (!token) throw new Error('Nicht eingeloggt – Edge Function benötigt Authentifizierung.');
 
-                const arrayBuffer = await window.APP_STATE.audioBlob.arrayBuffer();
-                const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+                // FormData ist wesentlich effizienter als Base64 und verhindert Abstürze bei langen Aufnahmen
+                const formData = new FormData();
+                formData.append('action', 'groq-whisper');
+                formData.append('file', window.APP_STATE.audioBlob, 'audio.webm');
 
                 const response = await fetch(CONFIG.EDGE_FUNCTION_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({
-                        action: 'groq-whisper',
-                        payload: { audioBase64: base64 }
-                    })
+                    body: formData
                 });
 
                 if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.error?.message || err.error || 'Proxy Fehler');
+                    const errText = await response.text();
+                    let errorMessage = `Fehler ${response.status}`;
+                    try {
+                        const errJson = JSON.parse(errText);
+                        errorMessage = errJson.error?.message || errJson.error || errorMessage;
+                    } catch {
+                        errorMessage = errText || errorMessage;
+                    }
+                    throw new Error(errorMessage);
                 }
                 data = await response.json();
 
@@ -449,8 +454,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- SUMMARIZATION ---
     summarizeBtn.addEventListener('click', async () => {
+        // Hinweis: Wenn EDGE_FUNCTION_URL gesetzt ist, wird der Key serverseitig geladen.
         const apiKey = CONFIG.GEMINI_API_KEY;
-        if (!apiKey) { alert('API Key fehlt!'); return; }
         
         window.UIAction.showVisualFeedback('Analysiere...', 'Deine Lern-Häppchen werden zubereitet.');
         summarizeBtn.disabled = true;
