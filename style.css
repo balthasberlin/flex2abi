@@ -1348,3 +1348,60 @@ input:checked + .slider:before {
    Regeln: .history-item.open .history-content (Z.881) + .history-item.open .history-toggle-icon (Z.771) */
 
 /* === RESPONSIVE LAYOUT (SMARTPHONES & TABLETS) === - Redundant block removed to use the master responsive layout defined above. */
+
+/* --- VOCABULARY VIEW --- */
+.vocab-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+.vocab-table th {
+    text-align: left;
+    padding: 1rem;
+    color: var(--accent-primary);
+    border-bottom: 1px solid var(--glass-border);
+    font-weight: 600;
+}
+
+.vocab-table td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.vocab-table tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.vocab-delete-btn {
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    font-size: 1.1rem;
+}
+
+.vocab-delete-btn:hover {
+    opacity: 1;
+}
+
+.modern-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    color: white;
+    font-family: inherit;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modern-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.1);
+}

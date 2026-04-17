@@ -115,13 +115,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.UIRenderer.renderLibraryItems) window.UIRenderer.renderLibraryItems();
             if (window.UIRenderer.renderHistory) window.UIRenderer.renderHistory();
         } else if (viewId === 'deadlines') {
-            StorageService.renderDeadlines(document.getElementById('deadline-list'));
+            window.StorageService.renderDeadlines(document.getElementById('deadline-list'));
+        } else if (viewId === 'vocab') {
+            if (window.UIRenderer.renderVocabList) window.UIRenderer.renderVocabList();
         }
 
         // Update Header Titles
         const titles = {
             'recorder': ['Aufnahme-Studio', 'Stimme aufnehmen, transkribieren und intelligent zusammenfassen.'],
             'library': ['Deine Bibliothek', 'Hier findest du all dein Wissen nach Fächern sortiert.'],
+            'vocab': ['Vokabel-Scanner', 'Extrahiere Vokabeln aus Fotos und exportiere sie als CSV.'],
             'deadlines': ['Termins-Radar', 'Alle Deadlines, Klausuren und Abgaben auf einen Blick.'],
             'settings': ['System-Einstellungen', 'Konfiguriere Audio-Filter, KI-Verhalten und Cloud-Speicher.']
         };
@@ -258,8 +261,9 @@ document.addEventListener('DOMContentLoaded', () => {
             recordingIndicator.style.display = 'block';
             micIcon.style.display = 'none';
             stopIcon.style.display = 'block';
-            statusText.textContent = 'Aufnahme läuft (Rauschfilter aktiv)...';
-            statusText.style.color = 'var(--accent-secondary)';
+            const useNoiseSuppression = localStorage.getItem('flex2abi_noise_suppression') !== 'false';
+            statusText.textContent = useNoiseSuppression ? 'Aufnahme läuft (Filter aktiv)...' : 'Aufnahme läuft (RAW-Modus)...';
+            statusText.style.color = useNoiseSuppression ? 'var(--accent-secondary)' : '#ffd700';
 
             AudioEngine.initVisualizer(window.APP_STATE.currentStream, document.querySelectorAll('.bar'));
             await AudioEngine.requestWakeLock();
@@ -498,5 +502,20 @@ document.addEventListener('DOMContentLoaded', () => {
             summarizeBtn.disabled = false;
         }
     });
+
+    // --- VOCABULARY EVENT LISTENERS ---
+    const scanVocabBtn = document.getElementById('scan-vocab-btn');
+    const exportVocabBtn = document.getElementById('export-vocab-btn');
+    const vocabFileInput = document.getElementById('vocab-file-input');
+
+    if (scanVocabBtn) {
+        scanVocabBtn.addEventListener('click', () => window.UIAction.triggerVocabScanner());
+    }
+    if (vocabFileInput) {
+        vocabFileInput.addEventListener('change', (e) => window.UIAction.handleVocabFile(e));
+    }
+    if (exportVocabBtn) {
+        exportVocabBtn.addEventListener('click', () => window.UIAction.exportVocabToCSV());
+    }
 
 });

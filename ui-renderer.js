@@ -260,6 +260,35 @@ window.UIRenderer = (function() {
                      console.error("Failed to render History Item:", err, item);
                 }
             });
+        },
+
+        renderVocabList: () => {
+            const listBody = document.getElementById('vocab-list-body');
+            const emptyState = document.getElementById('vocab-list-empty');
+            const tableContainer = document.getElementById('vocab-table-container');
+            
+            if (!listBody || !emptyState || !tableContainer) return;
+
+            const vocab = window.StorageService.getVocabList();
+            
+            if (vocab.length === 0) {
+                emptyState.style.display = 'block';
+                tableContainer.style.display = 'none';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            tableContainer.style.display = 'block';
+            
+            listBody.innerHTML = vocab.map(v => `
+                <tr class="fade-in">
+                    <td><strong style="color: white;">${v.word}</strong></td>
+                    <td>${v.translation}</td>
+                    <td style="text-align: right;">
+                        <button class="vocab-delete-btn" onclick="window.UIAction.deleteVocabItem(${v.id})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
         }
     };
 })();

@@ -106,7 +106,27 @@ window.StorageService = (function() {
             }
         },
 
-        // --- RENDERING LOGIC ---
+        // --- VOCABULARY STORAGE ---
+        saveVocab: (word, translation) => {
+            if (!word || !translation) return;
+            const vocab = JSON.parse(localStorage.getItem('ai_record_vocab') || '[]');
+            const id = Date.now() + Math.random();
+            vocab.unshift({ id, word: word.trim(), translation: translation.trim(), date: new Date().toISOString() });
+            localStorage.setItem('ai_record_vocab', JSON.stringify(vocab));
+            markDirty();
+            return vocab;
+        },
+
+        getVocabList: () => JSON.parse(localStorage.getItem('ai_record_vocab') || '[]'),
+
+        deleteVocab: (id) => {
+            let vocab = JSON.parse(localStorage.getItem('ai_record_vocab') || '[]');
+            vocab = vocab.filter(v => v.id !== id);
+            localStorage.setItem('ai_record_vocab', JSON.stringify(vocab));
+            markDirty();
+            return vocab;
+        },
+
         renderDeadlines: (containerElement) => {
             if (!containerElement) return;
             const history = JSON.parse(localStorage.getItem('ai_record_history') || '[]');

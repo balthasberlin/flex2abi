@@ -36,6 +36,10 @@
                     <span class="nav-icon">📚</span>
                     <span class="nav-label">Bibliothek</span>
                 </button>
+                <button class="nav-item" data-view="vocab">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-label">Vokabeln</span>
+                </button>
                 <button class="nav-item" data-view="deadlines">
                     <span class="nav-icon">📅</span>
                     <span class="nav-label">Termine</span>
@@ -150,6 +154,48 @@
                     </section>
                 </div>
             </div>
+            <!-- VIEW: VOCABULARY -->
+            <section id="view-vocab" class="view-container" style="display:none;">
+                <div class="sections-grid" style="grid-template-columns: 1fr;">
+                    <div class="card fade-in">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                            <div>
+                                <h2 style="margin: 0;">Meine Vokabeln</h2>
+                                <p style="color: var(--text-muted); font-size: 0.85rem;">Scanne Vokabelseiten und exportiere sie als CSV.</p>
+                            </div>
+                            <div style="display: flex; gap: 0.8rem;">
+                                <button id="export-vocab-btn" class="secondary-btn">📤 CSV Export</button>
+                                <button id="scan-vocab-btn" class="record-btn" style="height: 45px; padding: 0 1.5rem; font-size: 0.9rem;">📸 Scannen</button>
+                            </div>
+                        </div>
+
+                        <!-- Hidden File Input -->
+                        <input type="file" id="vocab-file-input" accept="image/*" capture="environment" style="display: none;">
+
+                        <div id="vocab-list-empty" style="text-align: center; padding: 3rem;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;">📝</div>
+                            <h3>Noch keine Vokabeln</h3>
+                            <p style="color: var(--text-muted);">Nutze den Scanner, um Vokabeln aus deinen Fotos zu extrahieren.</p>
+                        </div>
+
+                        <div id="vocab-table-container" style="display: none; overflow-x: auto;">
+                            <table class="vocab-table">
+                                <thead>
+                                    <tr>
+                                        <th>Wort</th>
+                                        <th>Übersetzung</th>
+                                        <th style="width: 50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vocab-list-body">
+                                    <!-- Vocab entries injected by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- TERMIN-RADAR / DEADLINES VIEW -->
             <section id="view-deadlines" class="view-container" style="display:none;">
                 <div id="deadline-list" class="deadline-grid">
@@ -277,6 +323,7 @@
     <script src="ai-service.js?v=3"></script>
     <script src="storage-service.js?v=3"></script>
     <script src="cloud-sync.js?v=3"></script>
+    <script src="vocab-service.js?v=1"></script>
     <script src="ui-renderer.js?v=3"></script>
     <script src="ui-actions.js?v=3"></script>
     <script src="app.js?v=5"></script>

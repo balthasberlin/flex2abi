@@ -16,11 +16,12 @@ window.AudioEngine = (function() {
             const useNoiseSuppression = localStorage.getItem('flex2abi_noise_suppression') !== 'false';
             return {
                 audio: {
-                    channelCount: 1,
-                    sampleRate: 16000,
                     echoCancellation: useNoiseSuppression,
                     noiseSuppression: useNoiseSuppression,
                     autoGainControl: useNoiseSuppression,
+                    // Advanced hints for browsers
+                    channelCount: 1,
+                    sampleRate: { ideal: 16000 }
                 }
             };
         },

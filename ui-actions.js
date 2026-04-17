@@ -292,6 +292,38 @@ window.UIAction = (function() {
                 row.style.opacity = '0';
                 setTimeout(() => row.remove(), 300);
             }
+        },
+
+        // --- VOCABULARY ACTIONS ---
+        triggerVocabScanner: () => {
+            document.getElementById('vocab-file-input')?.click();
+        },
+
+        handleVocabFile: async (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            
+            try {
+                const result = await window.VocabService.processImage(file);
+                if (result.success) {
+                    if (window.UIRenderer) window.UIRenderer.renderVocabList();
+                    // Reset input
+                    event.target.value = '';
+                }
+            } catch (e) {
+                alert('Fehler beim Scannen: ' + e.message);
+            }
+        },
+
+        deleteVocabItem: (id) => {
+            if (confirm('Vokabel wirklich löschen?')) {
+                window.StorageService.deleteVocab(id);
+                if (window.UIRenderer) window.UIRenderer.renderVocabList();
+            }
+        },
+
+        exportVocabToCSV: () => {
+            if (window.VocabService) window.VocabService.exportToCSV();
         }
     };
 })();
