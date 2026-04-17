@@ -518,4 +518,10 @@ document.addEventListener('DOMContentLoaded', () => {
         exportVocabBtn.addEventListener('click', () => window.UIAction.exportVocabToCSV());
     }
 
+    // --- ACCOUNT DELETION ---
+    const deleteAccountBtn = document.getElementById('delete-account-btn');
+    if (deleteAccountBtn) {
+        deleteAccountBtn.addEventListener('click', () => window.UIAction.handleAccountDeletion());
+    }
+
 });

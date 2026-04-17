@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
     const GROQ_KEY = Deno.env.get('GROQ_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -116,6 +117,21 @@ Deno.serve(async (req) => {
             });
             return new Response(await res.text(), {
                 status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+
+        // --- ACCOUNT DELETION ---
+        if (action === 'delete-account') {
+            if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY Secret fehlt.');
+            
+            // Admin-Client mit Service-Role initialisieren, um User zu löschen
+            const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+            const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
+
+            if (deleteError) throw new Error('Fehler beim Löschen des Accounts: ' + deleteError.message);
+
+            return new Response(JSON.stringify({ success: true, message: 'Account erfolgreich gelöscht.' }), {
+                status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
 

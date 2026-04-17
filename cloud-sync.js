@@ -307,6 +307,33 @@
              const filePath = `${currentUser.id}/${sessionId}.webm`;
              const { data } = supabase.storage.from('audio_records').getPublicUrl(filePath);
              return data?.publicUrl || null;
+        },
+        deleteAccount: async () => {
+            if (!currentUser || !supabase || !CONFIG.EDGE_FUNCTION_URL) return { error: 'Nicht eingeloggt oder Proxy fehlt.' };
+            
+            try {
+                const token = await window.CloudSync.getAuthToken();
+                if (!token) throw new Error('Authentifizierung fehlgeschlagen.');
+
+                const response = await fetch(CONFIG.EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'delete-account' })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Serverfehler beim Löschen.');
+                }
+
+                return await response.json();
+            } catch (e) {
+                console.error('Account Löschen Fehler:', e);
+                return { error: e.message };
+            }
         }
     };
 

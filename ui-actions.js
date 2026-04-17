@@ -322,6 +322,39 @@ window.UIAction = (function() {
             }
         },
 
+        handleAccountDeletion: async () => {
+            const confirmed = await window.UIAction.showConfirm(
+                'ACCOUNT LÖSCHEN?', 
+                'Bist du absolut sicher? Dies wird alle deine Daten (Aufnahmen, Vokabeln, Einstellungen) unwiderruflich aus der Cloud und von diesem Gerät löschen.',
+                'Ja, alles löschen'
+            );
+
+            if (!confirmed) return;
+
+            window.UIAction.showVisualFeedback('Lösche Account...', 'Deine Daten werden sicher entfernt.');
+
+            try {
+                const result = await window.CloudSync.deleteAccount();
+                
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                // Erfolg: Lokal alles löschen
+                localStorage.clear();
+                
+                window.UIAction.showVisualFeedback('Erfolg', 'Dein Account wurde gelöscht. Auf Wiedersehen!', 'success');
+                
+                setTimeout(() => {
+                    window.location.replace('login.html');
+                }, 2000);
+
+            } catch (e) {
+                window.UIAction.hideVisualFeedback();
+                alert('Fehler beim Löschen des Accounts: ' + e.message);
+            }
+        },
+
         exportVocabToCSV: () => {
             if (window.VocabService) window.VocabService.exportToCSV();
         }
