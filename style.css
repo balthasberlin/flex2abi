@@ -68,6 +68,7 @@ body {
 .sidebar {
     width: 260px;
     background: rgba(20, 21, 26, 0.8);
+    -webkit-backdrop-filter: blur(20px);
     backdrop-filter: blur(20px);
     border-right: 1px solid var(--glass-border);
     display: flex;
@@ -377,8 +378,8 @@ body {
 /* Glass Card Style */
 .card {
     background: var(--card-bg);
-    backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
+    backdrop-filter: blur(25px);
     border: 1px solid var(--glass-border);
     border-radius: 28px;
     padding: 2.5rem;
@@ -737,6 +738,7 @@ h2 {
     justify-content: space-between;
     align-items: center;
     font-weight: 600;
+    -webkit-user-select: none;
     user-select: none;
 }
 
@@ -855,6 +857,7 @@ h2 {
         overflow-y: auto;
         box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         background: rgba(26, 27, 35, 0.95);
+        -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
     }
 }
@@ -1412,6 +1415,7 @@ input:checked + .slider:before {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(11, 12, 16, 0.98);
+    -webkit-backdrop-filter: blur(40px);
     backdrop-filter: blur(40px);
     z-index: 1000;
     display: flex;
@@ -1629,8 +1633,8 @@ input:checked + .slider:before {
 
 .update-toast-content {
     background: rgba(14, 16, 21, 0.95);
-    backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
     border: 1px solid var(--accent-primary);
     border-radius: 20px;
     padding: 1rem 1.5rem;
@@ -1861,11 +1865,18 @@ body.auth-ready { opacity: 1; }
 .u-flex-column { display: flex !important; flex-direction: column !important; }
 .u-flex-end { display: flex !important; justify-content: flex-end !important; }
 .u-flex-wrap { flex-wrap: wrap !important; }
+.u-flex { display: -webkit-box !important; display: -ms-flexbox !important; display: flex !important; }
+.u-flex-center { display: -webkit-box !important; display: -ms-flexbox !important; display: flex !important; -webkit-box-align: center !important; -ms-flex-align: center !important; align-items: center !important; -webkit-box-pack: center !important; -ms-flex-pack: center !important; justify-content: center !important; }
+.u-flex-between { display: -webkit-box !important; display: -ms-flexbox !important; display: flex !important; -webkit-box-align: center !important; -ms-flex-align: center !important; align-items: center !important; -webkit-box-pack: justify !important; -ms-flex-pack: justify !important; justify-content: space-between !important; }
+.u-flex-column { display: -webkit-box !important; display: -ms-flexbox !important; display: flex !important; -webkit-box-orient: vertical !important; -webkit-box-direction: normal !important; -ms-flex-direction: column !important; flex-direction: column !important; }
+.u-flex-end { display: -webkit-box !important; display: -ms-flexbox !important; display: flex !important; -webkit-box-pack: end !important; -ms-flex-pack: end !important; justify-content: flex-end !important; }
+.u-flex-wrap { -ms-flex-wrap: wrap !important; flex-wrap: wrap !important; }
 
 .u-gap-0-5 { gap: 0.5rem !important; }
 .u-gap-0-8 { gap: 0.8rem !important; }
 .u-gap-1 { gap: 1rem !important; }
 
+.u-w-50 { width: 50px !important; }
 .u-w-100 { width: 100% !important; }
 .u-w-auto { width: auto !important; }
 

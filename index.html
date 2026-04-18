@@ -174,7 +174,7 @@
                         </div>
 
                         <!-- Hidden File Input -->
-                        <input type="file" id="vocab-file-input" accept="image/*" capture="environment" class="hidden">
+                        <input type="file" id="vocab-file-input" accept="image/*" capture="environment" class="hidden" title="Vokabel-Datei auswählen">
 
                         <div id="vocab-list-empty" class="u-text-center u-p-3">
                             <div class="u-font-size-lg u-mb-1 u-opacity-0-3">📝</div>
@@ -190,7 +190,7 @@
                                         <th>Übersetzung</th>
                                         <th>Fach</th>
                                         <th>Level</th>
-                                        <th class="u-w-auto" style="width: 50px;"></th>
+                                        <th class="u-w-50"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="vocab-list-body">
@@ -237,7 +237,7 @@
                                     <div class="setting-description">Filtert störende Hintergrundgeräusche heraus. Ausschalten für RAW-Audio Qualität bei guten Mikrofonen.</div>
                                 </div>
                                 <label class="switch">
-                                    <input type="checkbox" id="toggle-noise-suppression" checked>
+                                    <input type="checkbox" id="toggle-noise-suppression" checked title="Geräuschunterdrückung ein/aus">
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -248,7 +248,7 @@
                                     <div class="setting-description">Erfasst in der Zusammenfassung ausschließlich inhaltlich korrekte Antworten von Schülern.</div>
                                 </div>
                                 <label class="switch">
-                                    <input type="checkbox" id="toggle-filter-only" checked>
+                                    <input type="checkbox" id="toggle-filter-only" checked title="Fehler-Filter ein/aus">
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -259,7 +259,7 @@
                                     <div class="setting-description">Erlaubt das nachträgliche Anhören der Audio-Aufnahmen im Archiv. Löscht sich automatisch. (Verbraucht Datenvolumen)</div>
                                 </div>
                                 <label class="switch">
-                                    <input type="checkbox" id="toggle-audio-backup">
+                                    <input type="checkbox" id="toggle-audio-backup" title="Audio-Backup ein/aus">
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -270,7 +270,7 @@
                                     <div class="setting-description">Erinnert dich an anstehende Termine und Klausuren.</div>
                                 </div>
                                 <label class="switch">
-                                    <input type="checkbox" id="toggle-notifications" checked>
+                                    <input type="checkbox" id="toggle-notifications" checked title="Benachrichtigungen ein/aus">
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -317,11 +317,11 @@
             <div id="auth-form">
                 <div class="u-mb-1-5">
                     <label class="u-font-size-xs u-muted-text u-mb-0-5 u-flex">E-Mail</label>
-                    <input type="email" id="auth-email" class="modern-input u-w-100">
+                    <input type="email" id="auth-email" class="modern-input u-w-100" placeholder="max@example.com" title="E-Mail Adresse">
                 </div>
                 <div class="u-mb-1-5">
                     <label class="u-font-size-xs u-muted-text u-mb-0-5 u-flex">Passwort</label>
-                    <input type="password" id="auth-password" class="modern-input u-w-100">
+                    <input type="password" id="auth-password" class="modern-input u-w-100" placeholder="••••••••" title="Passwort">
                 </div>
                 
                 <div class="u-flex u-flex-column u-gap-0-8">
