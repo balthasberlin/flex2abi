@@ -122,7 +122,6 @@ window.AudioEngine = (function() {
             if ('wakeLock' in navigator) {
                 try {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Flex2Abi: Wake Lock active');
                 } catch (err) {
                     console.warn('Flex2Abi: Wake Lock error:', err);
                 }

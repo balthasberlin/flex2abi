@@ -15,8 +15,8 @@ Deno.serve(async (req) => {
         return new Response('ok', { headers: corsHeaders });
     }
 
-    const GEMINI_KEY = Deno.env.get('GEMINI_API_KEY');
-    const GROQ_KEY = Deno.env.get('GROQ_API_KEY');
+    const GEMINI_KEY = Deno.env.get('GEMINI_API_KEY')?.trim();
+    const GROQ_KEY = Deno.env.get('GROQ_API_KEY')?.trim();
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -61,11 +61,25 @@ Deno.serve(async (req) => {
             payload = body.payload;
         }
 
+        // --- DEBUG ACTION: PING ---
+        if (action === 'ping') {
+            return new Response(JSON.stringify({
+                success: true,
+                message: 'Pong!',
+                envStatus: {
+                    hasGemini: !!GEMINI_KEY,
+                    geminiLen: GEMINI_KEY?.length || 0,
+                    hasGroq: !!GROQ_KEY,
+                    groqLen: GROQ_KEY?.length || 0,
+                    user: user.email
+                }
+            }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
         // --- GROQ CHAT / SUMMARIZATION (FREE REPLACEMENT FOR GEMINI) ---
         if (action === 'groq-chat' || action === 'gemini') {
             if (!GROQ_KEY) throw new Error('GROQ_API_KEY Secret fehlt.');
             
-            // Wir nutzen Llama 3.3 70B für höchste Qualität (Free Tier bei Groq)
             const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: { 
@@ -84,14 +98,18 @@ Deno.serve(async (req) => {
             
             const data = await res.json();
             
-            // Wir geben das Format so zurück, dass die App es versteht (Mapping auf Gemini-Struktur falls nötig, 
-            // aber wir vereinfachen es hier für den Client)
+            if (!res.ok) {
+                return new Response(JSON.stringify({ error: `Groq Error (${res.status}): ${data.error?.message || JSON.stringify(data)}` }), {
+                    status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
             return new Response(JSON.stringify({
                 candidates: [{
                     content: { parts: [{ text: data.choices?.[0]?.message?.content || 'Fehler bei der Generierung.' }] }
                 }]
             }), {
-                status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
 
@@ -115,7 +133,21 @@ Deno.serve(async (req) => {
                 headers: { 'Authorization': `Bearer ${GROQ_KEY}` },
                 body: groqFormData
             });
-            return new Response(await res.text(), {
+
+            const resText = await res.text();
+            if (!res.ok) {
+                let errMsg = resText;
+                try {
+                    const errJson = JSON.parse(resText);
+                    errMsg = errJson.error?.message || errMsg;
+                } catch { /* use raw text */ }
+                
+                return new Response(JSON.stringify({ error: `Groq Error (${res.status}): ${errMsg}` }), {
+                    status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            return new Response(resText, {
                 status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
@@ -124,7 +156,6 @@ Deno.serve(async (req) => {
         if (action === 'delete-account') {
             if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY Secret fehlt.');
             
-            // Admin-Client mit Service-Role initialisieren, um User zu löschen
             const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
             const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
 

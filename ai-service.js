@@ -101,7 +101,8 @@ ${processedChunks.join('\n\n')}`;
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'apikey': window.CONFIG.SUPABASE_ANON_KEY
                     },
                     body: JSON.stringify({
                         action: 'gemini',
@@ -163,29 +164,30 @@ ${processedChunks.join('\n\n')}`;
             if (!text) return [];
             const found = [];
             const seen = new Set();
-            const reLiteral = /\\n/g;
-            const cleanText = text.replace(reLiteral, '\n');
+            const cleanText = text.replace(/\\n/g, '\n');
 
-            // Format 1 (Chunk-Ebene): TERMINE: DD.MM.YYYY - Ereignis
-            const re1 = /TERMINE:\s*(\d{2}\.\d{2}\.\d{4})\s*-\s*(.+)/gi;
-            let m;
-            while ((m = re1.exec(cleanText)) !== null) {
-                const key = m[1] + m[2].trim();
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    found.push({ date: m[1], task: m[2].replace(/\*/g, '').trim() });
-                }
-            }
+            // Formate erkennen:
+            // 1. TERMINE: 22.05.2024 - Test
+            // 2. - [22.05.2024] - Test
+            // 3. - 22.05.2024: Test
+            const patterns = [
+                /TERMINE:\s*(\d{2}\.\d{2}\.\d{4})[\s-:]+(.+)/gi,
+                /^[-*]\s*\[?(\d{2}\.\d{2}\.\d{4})\]?[\s-:]+(.+)/gm
+            ];
 
-            // Format 2 (Master-Ebene): - [DD.MM.YYYY] - Ereignis
-            const re2 = /^[-*]\s*\[?(\d{2}\.\d{2}\.\d{4})\]?\s*-\s*(.+)/gm;
-            while ((m = re2.exec(cleanText)) !== null) {
-                const key = m[1] + m[2].trim();
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    found.push({ date: m[1], task: m[2].replace(/\*/g, '').trim() });
+            patterns.forEach(re => {
+                let m;
+                while ((m = re.exec(cleanText)) !== null) {
+                    const date = m[1];
+                    const task = m[2].replace(/\*/g, '').trim();
+                    const key = date + task.toLowerCase();
+                    if (!seen.has(key) && task.length > 2) {
+                        seen.add(key);
+                        found.push({ date: date, task: task });
+                    }
                 }
-            }
+            });
+
             return found;
         },
 

@@ -15,15 +15,15 @@ window.UIRenderer = (function() {
             const audioUrl = window.CloudSync.getAudioUrl(item.id);
             if (audioUrl) {
                 audioPlayerHtml = `
-                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
-                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Audio-Backup (Löscht sich nach 24h):</p>
-                        <audio controls src="${audioUrl}" style="height: 35px; width: 100%; border-radius: 8px; outline: none;"
+                    <div class="u-mt-1 u-p-t-1 u-border-top">
+                        <p class="u-font-size-xs u-muted-text u-mb-0-5">Audio-Backup (Löscht sich nach 24h):</p>
+                        <audio controls src="${audioUrl}" class="u-w-100 u-rounded-8 u-outline-none" style="height: 35px;"
                             onerror="this.parentElement.innerHTML = \`
-                                <div style='display:flex; align-items:center; gap:0.6rem; padding:0.6rem 0.9rem; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);'>
-                                    <span style='font-size:1.1rem; opacity:0.5;'>🎙️</span>
+                                <div class='u-flex u-flex-center u-gap-0-5 u-rounded-10 u-bg-glass-light u-border-accent' style='padding:0.6rem 0.9rem;'>
+                                    <span class='u-opacity-0-5 u-font-size-md'>🎙️</span>
                                     <div>
-                                        <div style='font-size:0.78rem; color:var(--text-muted); font-weight:500;'>Kein Audio-Backup verfügbar</div>
-                                        <div style='font-size:0.7rem; color:var(--text-muted); opacity:0.6; margin-top:0.1rem;'>Backups werden automatisch nach 24h gelöscht.</div>
+                                        <div class='u-font-size-xs u-muted-text u-font-500'>Kein Audio-Backup verfügbar</div>
+                                        <div class='u-font-size-xs u-muted-text u-opacity-0-6 u-mt-0-2'>Backups werden automatisch nach 24h gelöscht.</div>
                                     </div>
                                 </div>
                             \`">
@@ -34,21 +34,21 @@ window.UIRenderer = (function() {
             }
         }
 
-        const badgeHtml = showFolderBadge ? `<span class="history-label" style="margin-left: 1rem; color: var(--accent-secondary); font-weight: 500;">${folderName}</span>` : '';
+        const badgeHtml = showFolderBadge ? `<span class="history-label u-accent-text u-font-500 u-mt-0 u-flex" style="margin-left: 1rem;">${folderName}</span>` : '';
 
         return `
             <div class="history-header">
                 <span class="history-date">${displayDate}</span>
                 ${badgeHtml}
                 <span class="history-preview">${displayKeywords}</span>
-                <div style="display: flex; align-items: center; gap: 0.8rem;">
+                <div class="u-flex u-flex-center u-gap-0-8">
                     <span class="history-toggle-icon">▼</span>
                     <button class="history-delete-btn" onclick="window.UIAction.deleteHistoryItem(${item.id}, event)">🗑️</button>
                 </div>
             </div>
             <div class="history-content">
                 <div class="summary-container">${parseMarkdown(item.summaryHtml || item.masterText || 'Keine Zusammenfassung verfügbar')}</div>
-                <div style="margin-top: 1.5rem; display: flex; gap: 1rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+                <div class="u-mt-1-5 u-flex u-gap-1 u-border-top u-p-t-1">
                     <button class="secondary-btn" onclick="window.UIAction.refineHistoryItem(${item.id}, this)">🔍 Analysieren</button>
                 </div>
                 ${audioPlayerHtml}
@@ -63,18 +63,18 @@ window.UIRenderer = (function() {
             // Replace \n with actual newlines if stored as literal string
             .replace(/\\n/g, '\n')
             // Horizontal rule
-            .replace(/^---+$/gm, '<hr style="border-color: var(--glass-border); margin: 1rem 0;">')
+            .replace(/^---+$/gm, '<hr class="u-border-bottom u-mb-1 u-mt-1">')
             // Headers: ### Header -> h3
-            .replace(/^### (.*$)/gm, '<h3 style="color: var(--accent-primary); margin-top: 1.2rem;">$1</h3>')
+            .replace(/^### (.*$)/gm, '<h3 class="u-accent-text u-mt-1">$1</h3>')
             // Math: $...$ -> styled span
-            .replace(/\$([^$\n]+)\$/g, '<code style="background: rgba(255,255,255,0.08); padding: 0.1em 0.4em; border-radius: 4px; font-size: 0.95em; color: var(--accent-secondary);">$1</code>')
+            .replace(/\$([^$\n]+)\$/g, '<code class="u-bg-glass-light u-p-0-2 u-rounded-8 u-font-size-sm u-accent-text">$1</code>')
             // Bold
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             // Italic
             .replace(/\*(.+?)\*/g, '<em>$1</em>')
             // Bullet lists: lines starting with "- " or "* " (multi-line)
             .replace(/^[*-] (.+)/gm, '<li>$1</li>')
-            .replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul style="padding-left: 1.5rem; margin: 0.5rem 0;">${match}</ul>`)
+            .replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul class="u-mb-0-5 u-p-l-1-5">${match}</ul>`)
             // Newlines to <br> where not already inside a block tag
             .replace(/\n(?!<\/?(h[1-6]|ul|li|div|p|hr))/g, '<br>');
     }
@@ -102,13 +102,11 @@ window.UIRenderer = (function() {
             const summaryDiv = document.getElementById('summary-content');
             if (!summaryDiv) return;
             const header = document.createElement('div');
-            header.className = 'card';
-            header.style.marginBottom = '2rem';
-            header.style.border = '2px solid var(--accent-secondary)';
+            header.className = 'card u-mb-2 u-border-accent';
             header.innerHTML = parseMarkdown(masterText
-                .replace(/FACH: (.+)/g, '<h2 style="color: var(--accent-secondary); margin-top:0;">STUDY: $1</h2>')
-                .replace(/SCHLAGWORTE: (.+)/g, '<p style="color: var(--text-muted); font-size: 0.85rem;">TAGS: $1</p>')
-                .replace(/### (.+)/g, '<h3 style="margin-top:1.5rem;">$1</h3>')
+                .replace(/FACH: (.+)/g, '<h2 class="u-accent-text u-mt-0">STUDY: $1</h2>')
+                .replace(/SCHLAGWORTE: (.+)/g, '<p class="u-muted-text u-font-size-xs">TAGS: $1</p>')
+                .replace(/### (.+)/g, '<h3 class="u-mt-1-5">$1</h3>')
             );
             summaryDiv.prepend(header);
         },
@@ -122,22 +120,27 @@ window.UIRenderer = (function() {
             if (existing) existing.remove();
 
             const card = document.createElement('div');
-            card.className = 'card fade-in deadline-confirm-card';
-            card.style.cssText = 'margin-top: 2rem; border: 2px solid var(--accent-primary); border-radius: 16px; padding: 1.5rem; width: 100%;';
+            card.className = 'card fade-in deadline-confirm-card u-mt-2 u-border-accent u-rounded-16 u-p-1-5 u-w-100';
 
             const rows = deadlines.map((d, i) => `
-                <div id="deadline-row-${i}" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.8rem 0; border-bottom: 1px solid var(--glass-border); flex-wrap: wrap;">
-                    <div>
-                        <span style="font-size: 1.2rem; margin-right: 0.5rem;">📅</span>
-                        <strong style="color: var(--accent-primary);">${d.date}</strong>
-                        <span style="color: var(--text-main); margin-left: 0.6rem;">${d.task}</span>
+                <div id="deadline-row-${i}" class="u-flex u-flex-between u-gap-1 u-p-b-1 u-p-t-1 u-border-bottom u-flex-wrap">
+                    <div class="u-flex u-flex-center u-gap-0-5">
+                        <span class="u-font-size-md">📅</span>
+                        <strong class="u-primary-text u-font-size-sm">${d.date}</strong>
+                        <span class="u-muted-text u-font-size-sm u-ml-0-5">${d.task}</span>
                     </div>
-                    <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-                        <button class="secondary-btn" style="padding: 0.35rem 0.9rem; font-size: 0.82rem; border-color: var(--accent-secondary); color: var(--accent-secondary);"
+                    <div class="u-flex u-gap-0-5 u-flex-center u-flex-wrap u-mt-0-5 u-w-100 u-flex-end">
+                        <select class="modern-input u-w-auto u-font-size-xs u-bg-glass-light btn-compact u-p-x-0-5" id="reminder-select-${i}">
+                            <option value="0">Keine Erinnerung</option>
+                            <option value="1">1 Tag vorher</option>
+                            <option value="3">3 Tage vorher</option>
+                            <option value="7">1 Woche vorher</option>
+                        </select>
+                        <button class="secondary-btn u-font-size-xs u-border-accent u-accent-text u-rounded-8 u-p-y-0-35 u-p-x-0-9"
                             onclick="window.UIAction.confirmDeadline(${JSON.stringify(d).replace(/"/g, '&quot;')}, ${sessionId}, ${i})">
                             ✅ Übernehmen
                         </button>
-                        <button class="secondary-btn" style="padding: 0.35rem 0.9rem; font-size: 0.82rem; opacity: 0.5;"
+                        <button class="secondary-btn u-font-size-xs u-opacity-0-5 u-rounded-8 u-p-y-0-35 u-p-x-0-9"
                             onclick="window.UIAction.dismissDeadlineRow(${i})">
                             ✕
                         </button>
@@ -146,11 +149,11 @@ window.UIRenderer = (function() {
             `).join('');
 
             card.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem;">
-                    <span style="font-size: 1.4rem;">🗓️</span>
+                <div class="u-flex u-flex-center u-gap-0-8 u-mb-1">
+                    <span class="u-font-size-md">🗓️</span>
                     <div>
-                        <h3 style="margin: 0; font-size: 1rem; color: var(--accent-primary);">Erkannte Termine</h3>
-                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Sind diese Daten korrekt? Wähle, welche in den Kalender-Reiter übernommen werden sollen.</p>
+                        <h3 class="u-mb-0 u-font-size-md u-primary-text">Erkannte Termine</h3>
+                        <p class="u-mb-0 u-font-size-xs u-muted-text">Sind diese Daten korrekt? Wähle, welche in den Kalender-Reiter übernommen werden sollen.</p>
                     </div>
                 </div>
                 ${rows}
@@ -189,7 +192,7 @@ window.UIRenderer = (function() {
                             <span class="subject-item-count">${grouped[folder].length} Einträge</span>
                         </div>
                         <h3>${folder}</h3>
-                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: auto;">Zuletzt: ${latestDate}</p>
+                        <p class="u-font-size-xs u-muted-text u-mt-auto">Zuletzt: ${latestDate}</p>
                     `;
                     
                     card.addEventListener('click', () => window.UIRenderer.showSubjectDetail(folder));
@@ -208,8 +211,8 @@ window.UIRenderer = (function() {
             if (!detailView || !titleEl || !libraryGrid) return;
             
             titleEl.textContent = `Fach: ${folderName}`;
-            libraryGrid.style.display = 'none';
-            detailView.style.display = 'block';
+            libraryGrid.classList.add('hidden');
+            detailView.classList.remove('hidden');
             
             window.UIRenderer.renderSubjectItems(folderName);
         },
@@ -222,7 +225,7 @@ window.UIRenderer = (function() {
             const filtered = history.filter(item => (item.folder || 'Allgemein') === folderName);
             
             if (filtered.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted);">Keine Einträge in diesem Ordner.</p>';
+                container.innerHTML = '<p class="u-muted-text">Keine Einträge in diesem Ordner.</p>';
                 return;
             }
 
@@ -245,7 +248,7 @@ window.UIRenderer = (function() {
 
             const history = window.StorageService.getHistory();
             if (history.length === 0) {
-                historyContainer.innerHTML = '<p style="color: var(--text-muted);">Noch keine Aufnahmen im Archiv.</p>';
+                historyContainer.innerHTML = '<p class="u-muted-text">Noch keine Aufnahmen im Archiv.</p>';
                 return;
             }
 
@@ -266,29 +269,203 @@ window.UIRenderer = (function() {
             const listBody = document.getElementById('vocab-list-body');
             const emptyState = document.getElementById('vocab-list-empty');
             const tableContainer = document.getElementById('vocab-table-container');
+            const trainBtn = document.getElementById('start-training-btn');
             
             if (!listBody || !emptyState || !tableContainer) return;
 
             const vocab = window.StorageService.getVocabList();
             
             if (vocab.length === 0) {
-                emptyState.style.display = 'block';
-                tableContainer.style.display = 'none';
+                emptyState.classList.remove('hidden');
+                tableContainer.classList.add('hidden');
+                if (trainBtn) trainBtn.classList.add('hidden');
                 return;
             }
 
-            emptyState.style.display = 'none';
-            tableContainer.style.display = 'block';
+            emptyState.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
+            if (trainBtn) trainBtn.classList.remove('hidden');
             
-            listBody.innerHTML = vocab.map(v => `
-                <tr class="fade-in">
-                    <td><strong style="color: white;">${v.word}</strong></td>
-                    <td>${v.translation}</td>
-                    <td style="text-align: right;">
-                        <button class="vocab-delete-btn" onclick="window.UIAction.deleteVocabItem(${v.id})">🗑️</button>
-                    </td>
-                </tr>
-            `).join('');
+            listBody.innerHTML = vocab.map(v => {
+                const subjectIcon = window.StorageService.getFolderIcon(v.subject || 'Allgemein');
+                let levelHtml = '<div class="level-dots">';
+                for(let i=1; i<=5; i++) {
+                    levelHtml += `<div class="level-dot ${i <= (v.level || 1) ? 'active' : ''}"></div>`;
+                }
+                levelHtml += '</div>';
+
+                return `
+                    <tr class="fade-in">
+                        <td><strong class="u-text-white">${v.word}</strong></td>
+                        <td>${v.translation}</td>
+                        <td>
+                            <div class="u-flex u-flex-center u-gap-0-5 u-font-size-xs u-muted-text">
+                                <span>${subjectIcon}</span> ${v.subject || 'Allgemein'}
+                            </div>
+                        </td>
+                        <td>${levelHtml}</td>
+                        <td class="u-text-right">
+                            <button class="vocab-delete-btn" onclick="window.UIAction.deleteVocabItem(${v.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        },
+
+        renderTrainerSetup: (subjects) => {
+            const overlay = document.getElementById('trainer-overlay');
+            if (!overlay) return;
+
+            const subjectOptions = subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+
+            overlay.innerHTML = `
+                <div class="trainer-header">
+                    <h2 class="u-mt-0">Lern-Session setup</h2>
+                    <button class="secondary-btn" onclick="window.UIAction.closeTrainer()">Schließen</button>
+                </div>
+
+                <div class="trainer-setup card fade-in">
+                    <div class="setup-option">
+                        <label>Was möchtest du üben?</label>
+                        <select id="trainer-subject-select" class="modern-input u-w-100">
+                            <option value="Alle">Alle Fächer</option>
+                            ${subjectOptions}
+                        </select>
+                    </div>
+
+                    <div class="setup-option">
+                        <label>Lern-Modus</label>
+                        <div class="u-grid u-grid-2 u-gap-1">
+                            <button id="mode-flashcard" class="secondary-btn active" onclick="this.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active')); this.classList.add('active')">Karteikarten</button>
+                            <button id="mode-type" class="secondary-btn" onclick="this.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active')); this.classList.add('active')">Tippen</button>
+                        </div>
+                    </div>
+
+                    <div class="setup-option">
+                        <label>Richtung</label>
+                        <select id="trainer-direction-select" class="modern-input u-w-100">
+                            <option value="mixed">Zufällig gemischt</option>
+                            <option value="a-b">Wort -> Übersetzung</option>
+                            <option value="b-a">Übersetzung -> Wort</option>
+                        </select>
+                    </div>
+
+                    <button class="record-btn u-w-100 u-mt-1 u-font-size-md" style="height: 60px;" onclick="window.UIAction.startTrainerSession()">
+                        Session starten 🚀
+                    </button>
+                </div>
+            `;
+            overlay.style.display = 'flex';
+        },
+
+        renderTrainerCard: (card) => {
+            const overlay = document.getElementById('trainer-overlay');
+            if (!overlay) return;
+
+            const progressPercent = (card.index / card.total) * 100;
+
+            let interactionHtml = '';
+            if (card.mode === 'flashcard') {
+                interactionHtml = `
+                    <div id="flashcard-controls" class="hidden u-w-100 u-max-w-500 u-gap-1-5">
+                        <button class="secondary-btn u-flex-1 u-danger-text u-rounded-16" style="height: 60px;" onclick="window.UIAction.handleTrainerFeedback(false)">
+                            Nicht gewusst ❌
+                        </button>
+                        <button class="record-btn u-flex-1 u-rounded-16" style="height: 60px; background: var(--success);" onclick="window.UIAction.handleTrainerFeedback(true)">
+                            Gewusst! ✅
+                        </button>
+                    </div>
+                    <p id="click-hint" class="u-muted-text u-font-size-sm">Klicke auf die Karte zum Umdrehen</p>
+                `;
+            } else {
+                interactionHtml = `
+                    <div class="type-input-wrap fade-in">
+                        <input type="text" id="trainer-type-input" class="trainer-input" placeholder="Übersetzung eingeben..." autofocus autocomplete="off">
+                        <p class="u-muted-text u-font-size-xs">Drücke ENTER zum Bestätigen</p>
+                    </div>
+                `;
+            }
+
+            overlay.innerHTML = `
+                <div class="trainer-header">
+                    <div class="u-flex u-flex-center u-gap-1">
+                        <span class="u-bg-glass-light u-rounded-12 u-font-size-xs u-border-accent-soft" style="padding: 5px 12px;">
+                            ${card.subject}
+                        </span>
+                    </div>
+                    <button class="secondary-btn" onclick="window.UIAction.closeTrainer()">Abbrechen</button>
+                </div>
+
+                <div class="trainer-progress-wrap">
+                    <div class="u-flex u-flex-between u-mb-0-6 u-font-size-xs">
+                        <span>Vokabel ${card.index} von ${card.total}</span>
+                        <span>${Math.round(progressPercent)}%</span>
+                    </div>
+                    <div class="progress-bar-bg u-h-8" style="height: 8px;">
+                        <div class="progress-bar-fill" style="width: ${progressPercent}%; background: var(--accent-primary); box-shadow: 0 0 10px var(--accent-primary);"></div>
+                    </div>
+                </div>
+
+                <div class="flashcard-container" id="trainer-card" onclick="window.UIAction.flipTrainerCard()">
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front">
+                            <span class="flashcard-label">FRAGE</span>
+                            <div class="flashcard-word">${card.question}</div>
+                        </div>
+                        <div class="flashcard-back">
+                            <span class="flashcard-label">ANTWORT</span>
+                            <div class="flashcard-word">${card.answer}</div>
+                        </div>
+                    </div>
+                </div>
+
+                ${interactionHtml}
+            `;
+
+            // Focus input if in type mode
+            if (card.mode === 'type') {
+                setTimeout(() => {
+                    const input = document.getElementById('trainer-type-input');
+                    if (input) {
+                        input.focus();
+                        input.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') window.UIAction.handleTrainerTypeSubmit();
+                        });
+                    }
+                }, 100);
+            }
+        },
+
+        renderTrainerResults: (stats) => {
+            const overlay = document.getElementById('trainer-overlay');
+            if (!overlay) return;
+
+            overlay.innerHTML = `
+                <div class="trainer-header">
+                    <h2 class="u-mt-0">Session beendet!</h2>
+                </div>
+
+                <div class="card fade-in u-max-w-500 u-w-100 u-text-center" style="padding: 3rem 2rem;">
+                    <div class="u-font-size-xl u-mb-1-5" style="font-size: 4rem;">${stats.percentage > 80 ? '🏆' : stats.percentage > 50 ? '🥈' : '📚'}</div>
+                    <h2 class="u-mb-0-5">Klasse Leistung!</h2>
+                    <p class="u-muted-text u-mb-2">Du hast die Session erfolgreich abgeschlossen.</p>
+                    
+                    <div class="result-stats-grid">
+                        <div class="stat-item">
+                             <div class="stat-value u-success-text">${stats.correct}</div>
+                             <div class="stat-label">Richtig</div>
+                        </div>
+                        <div class="stat-item">
+                             <div class="stat-value u-primary-text">${stats.percentage}%</div>
+                             <div class="stat-label">Erfolg</div>
+                        </div>
+                    </div>
+
+                    <button class="record-btn u-w-100 u-mt-2" style="height: 60px;" onclick="window.UIAction.closeTrainer()">
+                        Zurück zur Übersicht
+                    </button>
+                </div>
+            `;
         }
     };
 })();

@@ -14,12 +14,12 @@ window.VocabService = (function() {
     });
 
     return {
-        processImage: async (file) => {
+        processImage: async (file, subject = 'Allgemein') => {
             const apiKey = window.CONFIG?.GEMINI_API_KEY;
             
             // Visual feedback
             if (window.UIAction) {
-                window.UIAction.showVisualFeedback('Bild wird verarbeitet...', 'KI extrahiert Vokabeln und achtet auf Sonderzeichen.');
+                window.UIAction.showVisualFeedback('Bild wird verarbeitet...', `KI extrahiert Vokabeln für ${subject}...`);
             }
 
             try {
@@ -100,14 +100,16 @@ BEACHTE DIESE REGELN:
                 lines.forEach(line => {
                     const [word, translation] = line.split(';').map(s => s.trim());
                     if (word && translation) {
-                        window.StorageService.saveVocab(word, translation);
+                        window.StorageService.saveVocab(word, translation, subject);
                     }
                 });
 
                 return { success: true, count: extractedCount };
 
             } catch (err) {
+                // Log maintained for developer info, but UI gets a clean message
                 console.error("Vocab Processing Error:", err);
+                if (window.UIAction) window.UIAction.showError('Fehler', 'Das Bild konnte nicht verarbeitet werden: ' + err.message);
                 throw err;
             } finally {
                 if (window.UIAction) window.UIAction.hideVisualFeedback();
@@ -117,17 +119,17 @@ BEACHTE DIESE REGELN:
         exportToCSV: () => {
             const vocab = window.StorageService.getVocabList();
             if (vocab.length === 0) {
-                alert("Keine Vokabeln zum Exportieren vorhanden.");
+                if (window.UIAction) window.UIAction.showError("Leere Liste", "Keine Vokabeln zum Exportieren vorhanden.");
                 return;
             }
 
             // Create CSV Content
             let csvContent = "\uFEFF"; // UTF-8 BOM for Excel
-            csvContent += "Wort;Übersetzung;Hinzugefügt am\n";
+            csvContent += "Wort;Übersetzung;Fach;Lern-Level;Hinzugefügt am\n";
             
             vocab.forEach(v => {
                 const date = new Date(v.date).toLocaleDateString('de-DE');
-                csvContent += `"${v.word}";"${v.translation}";"${date}"\n`;
+                csvContent += `"${v.word}";"${v.translation}";"${v.subject || 'Allgemein'}";"${v.level || 1}";"${date}"\n`;
             });
 
             // Trigger Download

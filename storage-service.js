@@ -31,10 +31,17 @@ window.StorageService = (function() {
         return '📁';
     };
 
-    // Centralized Sync-Flag Manager
+    // Central cache for high-frequency reads
+    let historyCache = null;
+    let vocabCache = null;
+
     const markDirty = () => {
         if (window.APP_STATE) window.APP_STATE.syncDirty = true;
     };
+
+    const invalidateVocabCache = () => { vocabCache = null; };
+    const invalidateHistoryCache = () => { historyCache = null; };
+
 
     return {
         // --- DATA PERSISTENCE ---
@@ -50,6 +57,7 @@ window.StorageService = (function() {
             
             try {
                 localStorage.setItem('ai_record_history', JSON.stringify(history));
+                invalidateHistoryCache();
             } catch (e) {
                 if (e.name === 'QuotaExceededError' || e.code === 22) {
                     // Speicher voll → ältesten Eintrag ohne Deadlines entfernen
@@ -60,22 +68,27 @@ window.StorageService = (function() {
                         try {
                             localStorage.setItem('ai_record_history', JSON.stringify(history));
                         } catch (_) {
-                            alert('⚠️ Speicher ist komplett voll! Bitte gehe in die Bibliothek und lösche alte Aufnahmen.');
+                            if (window.UIAction) window.UIAction.showError('Speicher Voll', 'Der Speicher deines Browsers ist komplett belegt. Bitte lösche alte Aufnahmen.');
                         }
                     } else {
-                        alert('⚠️ Speicher ist voll! Bitte lösche einige alte Aufnahmen in der Bibliothek.');
+                        if (window.UIAction) window.UIAction.showError('Speicher Voll', 'Bitte lösche einige alte Aufnahmen in der Bibliothek, um Platz zu schaffen.');
                     }
                 }
             }
             markDirty();
         },
 
-        getHistory: () => JSON.parse(localStorage.getItem('ai_record_history') || '[]'),
+        getHistory: () => {
+            if (historyCache) return historyCache;
+            historyCache = JSON.parse(localStorage.getItem('ai_record_history') || '[]');
+            return historyCache;
+        },
 
         deleteItem: (id) => {
             let history = JSON.parse(localStorage.getItem('ai_record_history') || '[]');
             history = history.filter(h => h.id !== id);
             localStorage.setItem('ai_record_history', JSON.stringify(history));
+            invalidateHistoryCache();
             
             // In die Lösch-Warteschlange für Cloud-Sync aufnehmen
             let deletedQueue = JSON.parse(localStorage.getItem('ai_record_deleted') || '[]');
@@ -87,6 +100,7 @@ window.StorageService = (function() {
             markDirty();
             return history;
         },
+
 
         getDeletedQueue: () => JSON.parse(localStorage.getItem('ai_record_deleted') || '[]'),
 
@@ -102,29 +116,89 @@ window.StorageService = (function() {
             if (index !== -1) {
                 history[index].folder = newFolder.trim() || 'Allgemein';
                 localStorage.setItem('ai_record_history', JSON.stringify(history));
+                invalidateHistoryCache();
                 markDirty();
             }
         },
 
         // --- VOCABULARY STORAGE ---
-        saveVocab: (word, translation) => {
+        saveVocab: (word, translation, subject = 'Allgemein') => {
             if (!word || !translation) return;
             const vocab = JSON.parse(localStorage.getItem('ai_record_vocab') || '[]');
             const id = Date.now() + Math.random();
-            vocab.unshift({ id, word: word.trim(), translation: translation.trim(), date: new Date().toISOString() });
+            vocab.unshift({ 
+                id, 
+                word: word.trim(), 
+                translation: translation.trim(), 
+                subject: subject.trim() || 'Allgemein',
+                level: 1, // Learning box 1
+                lastReviewed: null,
+                date: new Date().toISOString() 
+            });
             localStorage.setItem('ai_record_vocab', JSON.stringify(vocab));
+            invalidateVocabCache();
             markDirty();
             return vocab;
         },
 
-        getVocabList: () => JSON.parse(localStorage.getItem('ai_record_vocab') || '[]'),
+        getVocabList: () => {
+            if (vocabCache) return vocabCache;
+
+            const list = JSON.parse(localStorage.getItem('ai_record_vocab') || '[]');
+            // Migration: Ensure all items have necessary fields
+            let migrated = false;
+            const updated = list.map(v => {
+                if (!v.subject || v.level === undefined) {
+                    v.subject = v.subject || 'Allgemein';
+                    v.level = v.level || 1;
+                    v.lastReviewed = v.lastReviewed || null;
+                    migrated = true;
+                }
+                return v;
+            });
+            if (migrated) localStorage.setItem('ai_record_vocab', JSON.stringify(updated));
+            vocabCache = updated;
+            return updated;
+        },
+
 
         deleteVocab: (id) => {
             let vocab = JSON.parse(localStorage.getItem('ai_record_vocab') || '[]');
             vocab = vocab.filter(v => v.id !== id);
             localStorage.setItem('ai_record_vocab', JSON.stringify(vocab));
+            invalidateVocabCache();
             markDirty();
             return vocab;
+        },
+
+
+        updateVocabProgress: (id, success) => {
+            let vocab = JSON.parse(localStorage.getItem('ai_record_vocab') || '[]');
+            const index = vocab.findIndex(v => v.id === id);
+            if (index !== -1) {
+                const item = vocab[index];
+                if (success) {
+                    item.level = Math.min(5, (item.level || 1) + 1);
+                } else {
+                    item.level = 1; // Back to start (Leitner)
+                }
+                item.lastReviewed = new Date().toISOString();
+                localStorage.setItem('ai_record_vocab', JSON.stringify(vocab));
+                invalidateVocabCache();
+                markDirty();
+            }
+        },
+
+        getVocabBySubject: (subject) => {
+            const list = window.StorageService.getVocabList();
+            if (subject === 'Alle' || !subject) return list;
+            return list.filter(v => v.subject === subject);
+        },
+
+        getAllVocabSubjects: () => {
+            const list = window.StorageService.getVocabList();
+            const subjects = new Set(list.map(v => v.subject || 'Allgemein'));
+            return Array.from(subjects).sort();
         },
 
         renderDeadlines: (containerElement) => {
@@ -134,12 +208,14 @@ window.StorageService = (function() {
 
             history.forEach(session => {
                 if (session.deadlines && Array.isArray(session.deadlines)) {
-                    session.deadlines.forEach(d => {
+                    session.deadlines.forEach((d, idx) => {
                         allDeadlines.push({ 
                             ...d, 
                             sessionId: session.id,
+                            originalIndex: idx,
                             folder: session.folder || 'Allgemein',
-                            sessionDate: session.date
+                            sessionDate: session.date,
+                            summaryHtml: session.summaryHtml || 'Keine Zusammenfassung verfügbar.'
                         });
                     });
                 }
@@ -147,10 +223,10 @@ window.StorageService = (function() {
 
             if (allDeadlines.length === 0) {
                 containerElement.innerHTML = `
-                    <div class="card" style="text-align: center; padding: 3rem;">
-                        <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;">📅</div>
+                    <div class="card u-text-center u-p-3">
+                        <div class="u-font-size-lg u-mb-1 u-opacity-0-3">📅</div>
                         <h3>Noch keine Termine erfasst</h3>
-                        <p style="color: var(--text-muted);">Sobald die KI in deinen Aufnahmen Fristen findet, erscheinen sie hier.</p>
+                        <p class="u-muted-text">Sobald die KI in deinen Aufnahmen Fristen findet, erscheinen sie hier.</p>
                     </div>
                 `;
                 return;
@@ -165,21 +241,44 @@ window.StorageService = (function() {
 
             allDeadlines.sort((a, b) => parseDate(a.date) - parseDate(b.date));
 
-            containerElement.innerHTML = allDeadlines.map(d => `
-                <div class="deadline-card fade-in">
-                    <div class="deadline-date-badge">
-                        ${d.date ? d.date.split('.')[0] : '?'}<br>
-                        <span style="font-size: 0.7rem; font-weight: 400; opacity: 0.8;">${d.date && d.date.includes('.') ? getMonthName(d.date.split('.')[1]) : 'MON'}</span>
-                    </div>
-                    <div class="deadline-info">
-                        <div class="deadline-title">${d.task}</div>
-                        <div class="deadline-source">
-                            <span class="deadline-tag">${d.folder}</span>
-                            Gefunden in Aufnahme am ${d.sessionDate}
+            containerElement.innerHTML = allDeadlines.map((d, i) => {
+                let reminderLabel = '';
+                if (d.reminder && d.reminder !== '0') {
+                    reminderLabel = `<span class="deadline-reminder-tag">🔔 ${d.reminder === '1' ? '1 Tag' : d.reminder + ' Tage'} vorher</span>`;
+                }
+
+                return `
+                    <div class="deadline-card fade-in card u-flex" style="animation-delay: ${i * 0.05}s" onclick="window.UIAction.toggleDeadline(event)">
+                        <div class="deadline-main-info">
+                            <div class="deadline-date-badge">
+                                ${d.date ? d.date.split('.')[0] : '?'}<br>
+                                <span class="u-font-size-xs u-font-500 u-opacity-0-8">${d.date && d.date.includes('.') ? getMonthName(d.date.split('.')[1]) : 'MON'}</span>
+                            </div>
+                            <div class="deadline-info">
+                                <div class="deadline-title">${d.task} ${reminderLabel}</div>
+                                <div class="deadline-source">
+                                    <span class="deadline-tag">${d.folder}</span>
+                                    Gefunden in Aufnahme am ${d.sessionDate}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="deadline-content">
+                            <div class="summary-text u-font-size-sm u-lh-1-5">
+                                ${d.summaryHtml}
+                            </div>
+                            <button class="deadline-jump-btn" onclick="event.stopPropagation(); window.UIAction.jumpToTopic('${d.folder}', ${d.sessionId})">
+                                📂 Zum Thema springen &rarr;
+                            </button>
+                        </div>
+
+                        <div class="deadline-actions" onclick="event.stopPropagation()">
+                            <button class="deadline-action-btn deadline-edit-btn" title="Bearbeiten" onclick="event.stopPropagation(); window.UIAction.openEditDeadlineModal(${d.sessionId}, ${d.originalIndex})">✏️</button>
+                            <button class="deadline-action-btn deadline-delete-btn" title="Löschen" onclick="event.stopPropagation(); window.UIAction.deleteDeadline(${d.sessionId}, ${d.originalIndex})">🗑️</button>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         },
 
         getFolderIcon: (folder) => getFolderIcon(folder)

@@ -52,7 +52,10 @@
             }
         }
         if (e.target.closest('#cloud-login-btn')) {
-            cloudModal.style.display = 'flex';
+            if (cloudModal) {
+                cloudModal.classList.remove('hidden');
+                cloudModal.style.display = 'flex';
+            }
         }
     });
 
@@ -61,16 +64,16 @@
         if (user) {
             // Logged In
             cloudStatusContainer.innerHTML = `
-                <div class="nav-item cloud-active" style="cursor: default; background: rgba(0, 210, 158, 0.05); border: 1px solid rgba(0, 210, 158, 0.2);">
+                <div class="nav-item cloud-active u-border-accent-soft">
                     <span class="nav-icon">👤</span>
-                    <div style="display: flex; flex-direction: column; overflow: hidden;">
-                        <span class="nav-label" style="font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${user.email}</span>
-                        <span style="font-size: 0.65rem; color: var(--accent-secondary);">Cloud-Sync aktiv</span>
+                    <div class="u-flex u-flex-column u-overflow-y-auto">
+                        <span class="nav-label u-font-size-xs">${user.email}</span>
+                        <span class="u-font-size-xs u-accent-text">Cloud-Sync aktiv</span>
                     </div>
                 </div>
-                <button class="secondary-btn" id="logout-btn" style="width: 100%; margin-top: 0.5rem; font-size: 0.7rem; padding: 0.3rem;">Abmelden</button>
+                <button class="secondary-btn btn-compact u-w-100 u-mt-0-5 u-font-size-xs" id="logout-btn">Abmelden</button>
             `;
-            cloudModal.style.display = 'none';
+            cloudModal.classList.add('hidden');
             // Start initial sync
             syncData();
         } else {
@@ -96,7 +99,6 @@
         
         // --- 1. HANDLE DELETIONS ---
         if (deletedQueue.length > 0) {
-            console.log('Cloud Sync: Lösche ' + deletedQueue.length + ' Einträge aus der Cloud...');
             const { error: delError } = await supabase
                 .from('recordings')
                 .delete()
@@ -112,7 +114,6 @@
 
         // --- 2. UPSERT NEW/UPDATED ITEMS ---
         if (localHistory.length > 0 && needsUpload) {
-            console.log('Cloud Sync: Lade lokale Änderungen hoch...');
             const upsertData = localHistory.map(item => ({
                 session_id: item.id,
                 user_id: currentUser.id,
@@ -208,7 +209,6 @@
         
         if (toDelete.length > 0) {
             await supabase.storage.from('audio_records').remove(toDelete);
-            console.log("Cloud Sync: " + toDelete.length + " alte Audio-Datei(en) nach 24h Limits gelöscht.");
         }
     }
 
@@ -216,33 +216,33 @@
     async function handleLogin() {
         const email = emailInput.value;
         const password = passwordInput.value;
-        showMessage('Status: Melde an...', 'var(--accent-primary)');
+        showMessage('Status: Melde an...', 'u-primary-text');
         
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
-            showMessage('Fehler: ' + error.message, 'var(--danger)');
+            showMessage('Fehler: ' + error.message, 'u-danger-text');
         } else {
-            showMessage('Erfolg: Erfolgreich angemeldet!', 'var(--accent-secondary)');
+            showMessage('Erfolg: Erfolgreich angemeldet!', 'u-accent-text');
         }
     }
 
     async function handleSignup() {
         const email = emailInput.value;
         const password = passwordInput.value;
-        showMessage('Status: Erstelle Account...', 'var(--accent-primary)');
+        showMessage('Status: Erstelle Account...', 'u-primary-text');
 
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) {
-            showMessage('Fehler: ' + error.message, 'var(--danger)');
+            showMessage('Fehler: ' + error.message, 'u-danger-text');
         } else {
-            showMessage('Erfolg: Bestätigungs-E-Mail gesendet! (Bitte prüfen)', 'var(--accent-secondary)');
+            showMessage('Erfolg: Bestätigungs-E-Mail gesendet! (Bitte prüfen)', 'u-accent-text');
         }
     }
 
-    function showMessage(msg, color) {
+    function showMessage(msg, className) {
         statusMsg.textContent = msg;
-        statusMsg.style.color = color;
-        statusMsg.style.display = 'block';
+        statusMsg.className = 'u-mt-1-5 u-text-center u-font-size-sm ' + className;
+        statusMsg.classList.remove('hidden');
     }
 
     // 5. Setup Events
@@ -255,7 +255,7 @@
 
         loginBtn.addEventListener('click', handleLogin);
         signupBtn.addEventListener('click', handleSignup);
-        closeCloudBtn.addEventListener('click', () => cloudModal.style.display = 'none');
+        closeCloudBtn.addEventListener('click', () => cloudModal.classList.add('hidden'));
 
         // Enter-Taste zum Anmelden
         const handleEnterKey = (e) => { if (e.key === 'Enter') handleLogin(); };
@@ -272,10 +272,10 @@
             if (badge) {
                 if (isOffline) {
                     badge.textContent = '⚠️ Offline – Daten lokal gesichert';
-                    badge.style.color = '#fbbf24';
+                    badge.className = 'u-font-size-xs u-gold-text';
                 } else {
                     badge.textContent = 'Cloud-Sync aktiv';
-                    badge.style.color = 'var(--accent-secondary)';
+                    badge.className = 'u-font-size-xs u-accent-text';
                 }
             }
         }
@@ -319,7 +319,8 @@
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'apikey': CONFIG.SUPABASE_ANON_KEY
                     },
                     body: JSON.stringify({ action: 'delete-account' })
                 });

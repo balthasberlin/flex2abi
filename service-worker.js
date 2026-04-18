@@ -4,7 +4,7 @@
  * Strategie: Network-First für API-Calls, Cache-First für statische Assets.
  */
 
-const CACHE_NAME = 'flex2abi-v1';
+const CACHE_NAME = 'flex2abi-v2';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -14,9 +14,13 @@ const STATIC_ASSETS = [
     './audio-engine.js',
     './ai-service.js',
     './storage-service.js',
+    './cloud-sync.js',
+    './vocab-service.js',
     './ui-renderer.js',
     './ui-actions.js',
     './app.js',
+    './notification-service.js',
+    './confirmed.html',
     './icons/icon-512.png',
     './manifest.json'
 ];
@@ -26,8 +30,14 @@ self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => cache.addAll(STATIC_ASSETS))
-            .then(() => self.skipWaiting())
     );
+});
+
+// Update: Auf Nachricht zum Aktivieren warten
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
 });
 
 // Activate: Alte Caches aufräumen

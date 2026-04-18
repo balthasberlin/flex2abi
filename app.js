@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterToggle = document.getElementById('toggle-filter-only');
     const backupToggle = document.getElementById('toggle-audio-backup');
     const noiseToggle = document.getElementById('toggle-noise-suppression');
+    const notificationToggle = document.getElementById('toggle-notifications');
 
     // --- GLOBAL APP STATE ---
     window.APP_STATE = {
@@ -65,6 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.APP_UI.refreshAll();
     }
 
+    // --- NOTIFICATION INITIALIZATION ---
+    if (window.NotificationService) {
+        setTimeout(() => {
+            window.NotificationService.checkReminders();
+        }, 3000); // Wait for potential sync to finish
+    }
+
     // Toggle Initialization
     const initToggle = (toggleElement, storageKey, defaultValue = 'true') => {
         if (!toggleElement) return;
@@ -81,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initToggle(filterToggle, 'flex2abi_filter_only', 'true');
     initToggle(backupToggle, 'flex2abi_audio_backup', 'false');
     initToggle(noiseToggle, 'flex2abi_noise_suppression', 'true');
+    initToggle(notificationToggle, 'flex2abi_notifications_enabled', 'true');
 
     // --- NAVIGATION LOGIC ---
     function setupNavigation() {
@@ -97,25 +106,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const backBtn = document.getElementById('back-to-library');
         if (backBtn) {
             backBtn.addEventListener('click', () => {
-                document.getElementById('subject-detail-view').style.display = 'none';
-                libraryGrid.style.display = 'grid';
+                document.getElementById('subject-detail-view').classList.add('hidden');
+                libraryGrid.classList.remove('hidden');
             });
         }
     }
 
     function switchView(viewId) {
-        views.forEach(v => v.style.display = 'none');
+        views.forEach(v => v.classList.add('hidden'));
         const activeView = document.getElementById('view-' + viewId);
-        if (activeView) activeView.style.display = 'block';
+        if (activeView) activeView.classList.remove('hidden');
 
         if (viewId === 'library') {
-            document.getElementById('subject-detail-view').style.display = 'none';
+            document.getElementById('subject-detail-view').classList.add('hidden');
             if (librarySearch) librarySearch.value = ''; // Reset ghost input
-            libraryGrid.style.display = 'grid';
+            libraryGrid.classList.remove('hidden');
             if (window.UIRenderer.renderLibraryItems) window.UIRenderer.renderLibraryItems();
             if (window.UIRenderer.renderHistory) window.UIRenderer.renderHistory();
         } else if (viewId === 'deadlines') {
             window.StorageService.renderDeadlines(document.getElementById('deadline-list'));
+            if (window.NotificationService) window.NotificationService.checkReminders();
         } else if (viewId === 'vocab') {
             if (window.UIRenderer.renderVocabList) window.UIRenderer.renderVocabList();
         }
@@ -152,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     interimTranscript += event.results[i][0].transcript;
                 }
             }
-            transcriptDiv.innerHTML = `<span style="color: var(--text-main)">${window.APP_STATE.fullTranscript}</span><span style="color: var(--text-muted)">${interimTranscript}</span>`;
+            transcriptDiv.innerHTML = `<span class="u-primary-text">${window.APP_STATE.fullTranscript}</span><span class="u-muted-text">${interimTranscript}</span>`;
             if (window.APP_STATE.fullTranscript.trim().length > 10) summarizeBtn.disabled = false;
         };
 
@@ -244,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.APP_STATE.currentSessionId = Date.now();
         window.APP_STATE.fullTranscript = '';
-        aiSuggestionBadge.style.display = 'none';
+        if (aiSuggestionBadge) aiSuggestionBadge.classList.add('hidden');
         transcriptDiv.textContent = '';
         
         try {
@@ -258,12 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
             window.APP_STATE.audioContext = context;
 
             window.APP_STATE.isRecording = true;
-            recordingIndicator.style.display = 'block';
-            micIcon.style.display = 'none';
-            stopIcon.style.display = 'block';
+            if (recordingIndicator) recordingIndicator.classList.remove('hidden');
+            if (micIcon) micIcon.classList.add('hidden');
+            if (stopIcon) stopIcon.classList.remove('hidden');
             const useNoiseSuppression = localStorage.getItem('flex2abi_noise_suppression') !== 'false';
             statusText.textContent = useNoiseSuppression ? 'Aufnahme läuft (Filter aktiv)...' : 'Aufnahme läuft (RAW-Modus)...';
-            statusText.style.color = useNoiseSuppression ? 'var(--accent-secondary)' : '#ffd700';
+            statusText.className = useNoiseSuppression ? 'u-accent-text' : 'u-gold-text';
 
             AudioEngine.initVisualizer(window.APP_STATE.currentStream, document.querySelectorAll('.bar'));
             await AudioEngine.requestWakeLock();
@@ -277,22 +287,31 @@ document.addEventListener('DOMContentLoaded', () => {
             window.APP_STATE.mediaRecorder.ondataavailable = (e) => window.APP_STATE.audioChunks.push(e.data);
             window.APP_STATE.mediaRecorder.onstop = async () => {
                 window.APP_STATE.audioBlob = new Blob(window.APP_STATE.audioChunks, { type: 'audio/webm' });
+                const audioBlob = window.APP_STATE.audioBlob;
+                const sessionId = window.APP_STATE.currentSessionId;
                 diarizeBtn.disabled = false;
                 window.APP_STATE.audioContext.close().catch(() => {});
                 
                 // Smart Audio Backup Logic
                 if (backupToggle && backupToggle.checked && window.CloudSync && window.CloudSync.isLoggedIn()) {
-                     let shouldUpload = true;
-                     const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-                     if (conn && (conn.type === 'cellular' || (conn.type === undefined && typeof conn.effectiveType === 'string' && (conn.effectiveType.includes('2g') || conn.effectiveType.includes('3g'))))) {
-                         shouldUpload = confirm("Mobilfunknetz erkannt (Möglicher Datenverbrauch). Große Audio-Datei jetzt in die Cloud hochladen?");
-                     }
-                     if (shouldUpload) {
-                         window.UIAction.showVisualFeedback('Sichere Audio...', 'Upload in die Cloud (24h Limit).');
-                         const success = await window.CloudSync.uploadAudio(window.APP_STATE.audioBlob, window.APP_STATE.currentSessionId);
-                         window.UIAction.hideVisualFeedback();
-                         if (!success) alert("Fehler beim Cloud-Upload der Audiodatei.");
-                     }
+                    if (window.CloudSync?.isLoggedIn() && audioBlob) {
+                         const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                         let shouldUpload = true;
+                         if (connection && (connection.type === 'cellular' || connection.saveData)) {
+                            shouldUpload = await window.UIAction.showConfirm(
+                                "Datenverbrauch", 
+                                "Mobilfunknetz erkannt (Möglicher Datenverbrauch). Große Audio-Datei jetzt in die Cloud hochladen?",
+                                "Hochladen"
+                            );
+                         }
+                         
+                         if (shouldUpload) {
+                             window.UIAction.showVisualFeedback('Sichere Audio...', 'Upload in die Cloud (24h Limit).');
+                             const success = await window.CloudSync.uploadAudio(audioBlob, sessionId);
+                             window.UIAction.hideVisualFeedback();
+                             if (!success) window.UIAction.showError("Sync-Fehler", "Fehler beim Cloud-Upload der Audiodatei.");
+                         }
+                    }
                 }
             };
 
@@ -315,15 +334,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             window.APP_STATE.isRecording = false;
             recordBtn.classList.remove('recording');
-            micIcon.style.display = 'block';
-            stopIcon.style.display = 'none';
+            if (micIcon) micIcon.classList.remove('hidden');
+            if (stopIcon) stopIcon.classList.add('hidden');
             statusText.textContent = 'Aufnahme beendet – bereit zur Analyse!';
-            statusText.style.color = 'var(--accent-secondary)';
-            recordingIndicator.style.display = 'none';
+            statusText.className = 'u-accent-text';
+            if (recordingIndicator) recordingIndicator.classList.add('hidden');
 
             if (window.APP_STATE.fullTranscript.trim().length > 5 || window.APP_STATE.audioBlob) {
                 if (summarizeBtn) summarizeBtn.disabled = false;
-                if (discardBtn) discardBtn.style.display = 'inline-block';
+                if (discardBtn) discardBtn.classList.remove('hidden');
             }
         } catch (e) {
             console.error('Stop error:', e);
@@ -348,16 +367,16 @@ document.addEventListener('DOMContentLoaded', () => {
             window.APP_STATE.currentSessionId = Date.now();
             
             // Clear UI
-            if (transcriptDiv) transcriptDiv.innerHTML = '<p style="color: var(--text-muted);">Noch kein Transkript vorhanden...</p>';
-            if (summaryDiv) summaryDiv.innerHTML = '<p style="color: var(--text-muted);">Das Transkript wird hier intelligent zusammengefasst.</p>';
+            if (transcriptDiv) transcriptDiv.innerHTML = '<p class="u-muted-text">Noch kein Transkript vorhanden...</p>';
+            if (summaryDiv) summaryDiv.innerHTML = '<p class="u-muted-text">Das Transkript wird hier intelligent zusammengefasst.</p>';
             
             summarizeBtn.disabled = true;
             diarizeBtn.disabled = true;
-            discardBtn.style.display = 'none';
+            if (discardBtn) discardBtn.classList.add('hidden');
             
             // UI Feedback
             statusText.textContent = 'Bereit für neue Aufnahme.';
-            statusText.style.color = 'var(--text-muted)';
+            statusText.className = 'u-muted-text';
         });
     }
 
@@ -367,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const msg = AudioEngine.getFriendlyErrorMessage(err);
         statusText.textContent = 'Fehler: ' + msg;
         statusText.style.color = 'var(--danger)';
-        alert('Mikrofon-Problem: ' + msg);
+        window.UIAction.showError('Mikrofon-Fehler', msg);
         window.APP_STATE.isRecording = false;
         recordBtn.classList.remove('recording');
         micIcon.style.display = 'block';
@@ -377,7 +396,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- TRANSCRIBE (GROQ WHISPER) ---
     diarizeBtn.addEventListener('click', async () => {
-        if (!window.APP_STATE.audioBlob) { alert('Keine abgeschlossene Aufnahme gefunden.'); return; }
+        if (!window.APP_STATE.audioBlob) { 
+            window.UIAction.showError('Fehler', 'Keine abgeschlossene Aufnahme gefunden.'); 
+            return; 
+        }
 
         window.UIAction.showVisualFeedback('Transkribiere...', 'Nutze Whisper für maximale Präzision.');
         diarizeBtn.disabled = true;
@@ -398,7 +420,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(CONFIG.EDGE_FUNCTION_URL, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'apikey': CONFIG.SUPABASE_ANON_KEY
                     },
                     body: formData
                 });
@@ -419,7 +442,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // Fallback: Direkter Groq API-Call
                 const apiKey = CONFIG.GROQ_API_KEY;
-                if (!apiKey) { alert('Groq API Key fehlt!'); return; }
+                if (!apiKey) { 
+                    window.UIAction.showError('Konfiguration', 'Groq API Key fehlt!'); 
+                    return; 
+                }
 
                 const formData = new FormData();
                 formData.append('file', window.APP_STATE.audioBlob, 'audio.webm');
@@ -449,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Deadlines werden im Summarize-Flow korrekt aus dem KI-Output extrahiert.
 
         } catch (e) {
-            alert('Transkriptions-Fehler (Groq): ' + e.message);
+            window.UIAction.showError('Transkriptions-Fehler', e.message);
             diarizeBtn.disabled = false;
         } finally {
             window.UIAction.hideVisualFeedback();
@@ -460,6 +486,10 @@ document.addEventListener('DOMContentLoaded', () => {
     summarizeBtn.addEventListener('click', async () => {
         // Hinweis: Wenn EDGE_FUNCTION_URL gesetzt ist, wird der Key serverseitig geladen.
         const apiKey = CONFIG.GEMINI_API_KEY;
+        if (!apiKey && !CONFIG.EDGE_FUNCTION_URL) {
+            window.UIAction.showError('Konfiguration', 'Gemini API Key fehlt!');
+            return;
+        }
         
         window.UIAction.showVisualFeedback('Analysiere...', 'Deine Lern-Häppchen werden zubereitet.');
         summarizeBtn.disabled = true;
@@ -505,11 +535,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- VOCABULARY EVENT LISTENERS ---
     const scanVocabBtn = document.getElementById('scan-vocab-btn');
+    const startTrainingBtn = document.getElementById('start-training-btn');
     const exportVocabBtn = document.getElementById('export-vocab-btn');
     const vocabFileInput = document.getElementById('vocab-file-input');
+    const confirmSubjectBtn = document.getElementById('confirm-subject-btn');
 
     if (scanVocabBtn) {
         scanVocabBtn.addEventListener('click', () => window.UIAction.triggerVocabScanner());
+    }
+    if (startTrainingBtn) {
+        startTrainingBtn.addEventListener('click', () => window.UIAction.openTrainer());
+    }
+    if (confirmSubjectBtn) {
+        confirmSubjectBtn.addEventListener('click', () => window.UIAction.confirmSubjectAndScan());
     }
     if (vocabFileInput) {
         vocabFileInput.addEventListener('change', (e) => window.UIAction.handleVocabFile(e));
@@ -522,6 +560,88 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteAccountBtn = document.getElementById('delete-account-btn');
     if (deleteAccountBtn) {
         deleteAccountBtn.addEventListener('click', () => window.UIAction.handleAccountDeletion());
+    }
+
+    // --- PWA INSTALL LOGIC ---
+    let deferredPrompt;
+    const installSection = document.getElementById('install-section');
+    const installBtn = document.getElementById('install-app-btn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Verhindert, dass Chrome den Standard-Mini-Infobar anzeigt
+        e.preventDefault();
+        // Event speichern, damit es später ausgelöst werden kann
+        deferredPrompt = e;
+        // Installations-Bereich anzeigen
+        if (installSection) installSection.style.display = 'block';
+    });
+
+    if (installBtn) {
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            
+            // Zeige den Installations-Dialog
+            deferredPrompt.prompt();
+            
+            // Warte auf die Entscheidung des Nutzers
+            await deferredPrompt.userChoice;
+            
+            // Prompt kann nur einmal verwendet werden
+            deferredPrompt = null;
+            
+            // Verstecke die Sektion wieder
+            if (installSection) installSection.style.display = 'none';
+        });
+    }
+
+    window.addEventListener('appinstalled', () => {
+        // App wurde installiert, Verstecke die Sektion
+        if (installSection) installSection.style.display = 'none';
+        deferredPrompt = null;
+    });
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js').then(reg => {
+                // Prüfen auf wartende Updates beim Start
+                if (reg.waiting) {
+                    showUpdateBanner(reg);
+                }
+
+                // Listener für neu gefundene Updates
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showUpdateBanner(reg);
+                        }
+                    });
+                });
+            }).catch(err => console.warn('Service Worker Fehler:', err));
+        });
+
+        // Automatisch neu laden, wenn der neue Service Worker die Kontrolle übernimmt
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+                window.location.reload();
+                refreshing = true;
+            }
+        });
+    }
+
+    function showUpdateBanner(registration) {
+        const toast = document.getElementById('update-toast');
+        const updateBtn = document.getElementById('update-btn');
+        if (!toast || !updateBtn) return;
+
+        toast.style.display = 'block';
+        updateBtn.addEventListener('click', () => {
+            if (registration.waiting) {
+                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+            toast.style.display = 'none';
+        });
     }
 
 });
