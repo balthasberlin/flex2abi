@@ -19,7 +19,7 @@ window.UIAction = (function() {
             
             <div id="overlay-buttons" class="hidden u-flex-center u-gap-1">
                 <button id="overlay-cancel" class="secondary-btn u-w-100">Abbrechen</button>
-                <button id="overlay-confirm" class="primary-btn u-w-100 u-border-danger u-danger-text">Löschen</button>
+                <button id="overlay-confirm" class="primary-btn u-w-100">Löschen</button>
             </div>
         </div>
     `;

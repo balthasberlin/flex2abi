@@ -1045,6 +1045,17 @@ h2 {
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+#overlay-buttons .secondary-btn,
+#overlay-buttons .primary-btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-align: center;
+}
+
 #overlay-buttons .secondary-btn {
     border: 1px solid var(--glass-border);
     background: rgba(255, 255, 255, 0.05);
@@ -1054,17 +1065,21 @@ h2 {
 #overlay-buttons .secondary-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     color: white;
+    transform: translateY(-1px);
 }
 
 #overlay-buttons .primary-btn {
-    border-radius: 12px;
-    font-weight: 700;
-    transition: all 0.2s ease;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.05);
+    color: var(--danger);
 }
 
 #overlay-buttons .primary-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.15);
+    border-color: var(--danger);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.1);
 }
 
 /* === DIARIZATION: SPRECHER-DIALOG === */
