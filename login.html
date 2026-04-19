@@ -2,9 +2,16 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flex2Abi – Anmelden</title>
-    <meta name="theme-color" content="#0b0c10">
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const meta = document.createElement('meta');
+            meta.name = 'theme-color';
+            meta.content = '#0b0c10';
+            document.head.appendChild(meta);
+        });
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
@@ -42,7 +49,7 @@
         @keyframes float { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(30px, -30px) scale(1.05); } }
 
         .login-card {
-            background: var(--card-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            background: var(--card-bg); -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px);
             border: 1px solid var(--glass-border); border-radius: 28px; padding: 2.5rem;
             width: 100%; max-width: 420px; margin: 1.5rem;
             box-shadow: 0 30px 80px rgba(0,0,0,0.5); position: relative; z-index: 10;
@@ -89,6 +96,7 @@
             font-size: 0.85rem;
             color: var(--text-muted);
             cursor: pointer;
+            -webkit-user-select: none;
             user-select: none;
         }
         .switch {
@@ -121,6 +129,7 @@
         }
         input:checked + .slider { background: var(--gradient); border-color: transparent; }
         input:checked + .slider:before { transform: translateX(18px); }
+        .alpha-label-badge { font-size: 0.7rem; color: var(--accent-primary); font-weight: 400; margin-left: 0.4rem; }
     </style>
 </head>
 <body>
@@ -150,7 +159,7 @@
             </div>
             <div class="field" id="alpha-field">
                 <label for="alpha-input">Zugangscode
-                    <span style="font-size: 0.7rem; color: var(--accent-primary); font-weight: 400; margin-left: 0.4rem;">Alpha</span>
+                    <span class="alpha-label-badge">Alpha</span>
                 </label>
                 <input type="password" id="alpha-input" name="alpha" placeholder="••••" autocomplete="off" inputmode="numeric">
             </div>

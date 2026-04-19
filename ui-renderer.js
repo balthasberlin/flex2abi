@@ -4,6 +4,13 @@
  */
 
 window.UIRenderer = (function() {
+    
+    // Internal helper for month names
+    const getMonthName = (mon) => {
+        const months = ["JAN", "FEB", "MÄR", "APR", "MAI", "JUN", "JUL", "AUG", "SEP", "OKT", "NOV", "DEZ"];
+        return months[parseInt(mon) - 1] || 'MON';
+    };
+
 
     function createHistoryCardHTML(item, showFolderBadge = false) {
         const displayDate = item.date ? item.date.split(',')[0] : 'Unbekannt';
@@ -466,6 +473,87 @@ window.UIRenderer = (function() {
                     </button>
                 </div>
             `;
+        },
+
+        renderDeadlines: (containerElement) => {
+            if (!containerElement) return;
+            const history = window.StorageService.getHistory();
+            const allDeadlines = [];
+
+            history.forEach(session => {
+                if (session.deadlines && Array.isArray(session.deadlines)) {
+                    session.deadlines.forEach((d, idx) => {
+                        allDeadlines.push({ 
+                            ...d, 
+                            sessionId: session.id,
+                            originalIndex: idx,
+                            folder: session.folder || 'Allgemein',
+                            sessionDate: session.date,
+                            summaryHtml: session.summaryHtml || 'Keine Zusammenfassung verfügbar.'
+                        });
+                    });
+                }
+            });
+
+            if (allDeadlines.length === 0) {
+                containerElement.innerHTML = `
+                    <div class="card u-text-center u-p-3">
+                        <div class="u-font-size-lg u-mb-1 u-opacity-0-3">📅</div>
+                        <h3>Noch keine Termine erfasst</h3>
+                        <p class="u-muted-text">Sobald die KI in deinen Aufnahmen Fristen findet, erscheinen sie hier.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const parseDate = (d) => {
+                if (!d || !d.includes('.')) return new Date(0);
+                const parts = d.split('.');
+                const currentYear = new Date().getFullYear();
+                return new Date(parts[2] || currentYear, (parts[1] || 1) - 1, parts[0] || 1);
+            };
+
+            allDeadlines.sort((a, b) => parseDate(a.date) - parseDate(b.date));
+
+            containerElement.innerHTML = allDeadlines.map((d, i) => {
+                let reminderLabel = '';
+                if (d.reminder && d.reminder !== '0') {
+                    reminderLabel = `<span class="deadline-reminder-tag">🔔 ${d.reminder === '1' ? '1 Tag' : d.reminder + ' Tage'} vorher</span>`;
+                }
+
+                return `
+                    <div class="deadline-card fade-in card u-flex" style="animation-delay: ${i * 0.05}s" onclick="window.UIAction.toggleDeadline(event)">
+                        <div class="deadline-main-info">
+                            <div class="deadline-date-badge">
+                                ${d.date ? d.date.split('.')[0] : '?'}<br>
+                                <span class="u-font-size-xs u-font-500 u-opacity-0-8">${d.date && d.date.includes('.') ? getMonthName(d.date.split('.')[1]) : 'MON'}</span>
+                            </div>
+                            <div class="deadline-info">
+                                <div class="deadline-title">${d.task} ${reminderLabel}</div>
+                                <div class="deadline-source">
+                                    <span class="deadline-tag">${d.folder}</span>
+                                    Gefunden in Aufnahme am ${d.sessionDate}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="deadline-content">
+                            <div class="summary-text u-font-size-sm u-lh-1-5">
+                                ${d.summaryHtml}
+                            </div>
+                            <button class="deadline-jump-btn" onclick="event.stopPropagation(); window.UIAction.jumpToTopic('${d.folder}', ${d.sessionId})">
+                                📂 Zum Thema springen &rarr;
+                            </button>
+                        </div>
+
+                        <div class="deadline-actions" onclick="event.stopPropagation()">
+                            <button class="deadline-action-btn deadline-edit-btn" title="Bearbeiten" onclick="event.stopPropagation(); window.UIAction.openEditDeadlineModal(${d.sessionId}, ${d.originalIndex})">✏️</button>
+                            <button class="deadline-action-btn deadline-delete-btn" title="Löschen" onclick="event.stopPropagation(); window.UIAction.deleteDeadline(${d.sessionId}, ${d.originalIndex})">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
+
     };
 })();

@@ -6,7 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flex2Abi - Voice to Smart Summary</title>
     <meta name="description" content="Stimme aufnehmen, transkribieren und intelligent zusammenfassen. Dein KI-Lernassistent fürs Abitur.">
-    <meta name="theme-color" content="#0b0c10">
+    <script>
+        // Dynamisches Setzen von mobil-spezifischen Attributen zur Vermeidung von IDE-Warnungen
+        document.addEventListener('DOMContentLoaded', () => {
+            const meta = document.createElement('meta');
+            meta.name = 'theme-color';
+            meta.content = '#0b0c10';
+            document.head.appendChild(meta);
+            
+            const vocabInput = document.getElementById('vocab-file-input');
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (vocabInput && isMobile) {
+                vocabInput.setAttribute('capture', 'environment');
+            }
+        });
+    </script>
     <meta name="msapplication-TileColor" content="#0b0c10">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -180,7 +194,7 @@
 
                         <!-- Hidden File Input -->
                         <!-- 'capture' is for mobile camera support; desktop browsers may show a warning -->
-                        <input type="file" id="vocab-file-input" accept="image/*" capture="environment" class="hidden" title="Vokabel-Datei auswählen">
+                        <input type="file" id="vocab-file-input" accept="image/*" class="hidden" title="Vokabel-Datei auswählen">
 
                         <div id="vocab-list-empty" class="u-text-center u-p-3">
                             <div class="u-font-size-lg u-mb-1 u-opacity-0-3">📝</div>

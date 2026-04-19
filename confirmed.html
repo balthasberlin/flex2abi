@@ -2,9 +2,16 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bestätigung erfolgreich – Flex2Abi</title>
-    <meta name="theme-color" content="#0b0c10">
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const meta = document.createElement('meta');
+            meta.name = 'theme-color';
+            meta.content = '#0b0c10';
+            document.head.appendChild(meta);
+        });
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -37,7 +44,7 @@
         @keyframes float { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(30px, -30px) scale(1.05); } }
 
         .confirm-card {
-            background: var(--card-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            background: var(--card-bg); -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px);
             border: 1px solid var(--glass-border); border-radius: 28px; padding: 3rem 2rem;
             width: 100%; max-width: 420px; margin: 1.5rem; text-align: center;
             box-shadow: 0 30px 80px rgba(0,0,0,0.5); position: relative; z-index: 10;

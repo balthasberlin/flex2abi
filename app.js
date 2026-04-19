@@ -56,8 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
         refreshAll: () => {
             if (window.UIRenderer.renderHistory) window.UIRenderer.renderHistory();
             if (window.UIRenderer.renderLibraryItems) window.UIRenderer.renderLibraryItems();
-            if (window.StorageService && window.StorageService.renderDeadlines) {
-                window.StorageService.renderDeadlines(document.getElementById('deadline-list'));
+            if (window.UIRenderer && window.UIRenderer.renderDeadlines) {
+                window.UIRenderer.renderDeadlines(document.getElementById('deadline-list'));
             }
         }
     };
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.UIRenderer.renderLibraryItems) window.UIRenderer.renderLibraryItems();
             if (window.UIRenderer.renderHistory) window.UIRenderer.renderHistory();
         } else if (viewId === 'deadlines') {
-            window.StorageService.renderDeadlines(document.getElementById('deadline-list'));
+            window.UIRenderer.renderDeadlines(document.getElementById('deadline-list'));
             if (window.NotificationService) window.NotificationService.checkReminders();
         } else if (viewId === 'vocab') {
             if (window.UIRenderer.renderVocabList) window.UIRenderer.renderVocabList();
@@ -496,33 +496,21 @@ document.addEventListener('DOMContentLoaded', () => {
         summaryDiv.innerHTML = '<div class="summary-loading"><div class="loader"></div>Wir bereiten Unterrichts-Häppchen vor...</div>';
         
         try {
-            const chunks = AIService.chunkText(window.APP_STATE.fullTranscript);
-            const processedResults = [];
-            const onlyCorrectAnswers = (localStorage.getItem('flex2abi_filter_only') !== 'false');
+            const results = await AIService.runFullAnalysis(
+                window.APP_STATE.fullTranscript,
+                (result, originalChunk, index) => {
+                    if (index === 0) summaryDiv.innerHTML = '';
+                    window.UIRenderer.renderChunkInUI(result, originalChunk);
+                }
+            );
 
-            for (let i = 0; i < chunks.length; i++) {
-                const prompt = AIService.getChunkPrompt(chunks[i], onlyCorrectAnswers);
-                const result = await AIService.callGemini(prompt, apiKey);
-                processedResults.push(result);
-                
-                // Partial Rendering (Quality of life)
-                if (i === 0) summaryDiv.innerHTML = '';
-                window.UIRenderer.renderChunkInUI(result, chunks[i]);
-                if (i < chunks.length -1) await AIService.wait(10000); 
+            window.UIRenderer.renderMasterInUI(results.masterText);
+            saveCurrentSessionToDisk(results.masterText);
+
+            if (results.deadlines && results.deadlines.length > 0) {
+                window.UIRenderer.renderDeadlineConfirmations(results.deadlines, window.APP_STATE.currentSessionId);
             }
-
-            // Master Summary
-            const masterPrompt = AIService.getMasterPrompt(processedResults);
-            const masterFullText = await AIService.callGemini(masterPrompt, apiKey);
-            window.UIRenderer.renderMasterInUI(masterFullText);
-            saveCurrentSessionToDisk(masterFullText);
-
-            // Erkannte Termine sammeln und Bestätigungskarte zeigen
-            const allRawText = [...processedResults, masterFullText].join('\n');
-            const detectedDeadlines = window.AIService.extractDeadlines(allRawText);
-            if (detectedDeadlines.length > 0) {
-                window.UIRenderer.renderDeadlineConfirmations(detectedDeadlines, window.APP_STATE.currentSessionId);
-            }
+        } catch (e) {
 
 
         } catch (e) {

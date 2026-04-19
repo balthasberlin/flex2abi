@@ -108,6 +108,7 @@
 
     // 3. Sync Logic (Upload/Download)
     let initialSyncDone = false;
+    let lastCloudCount = -1;
     
     async function syncData() {
         if (!currentUser || !supabase) return;
@@ -161,6 +162,12 @@
             .order('session_id', { ascending: false });
 
         if (!error && cloudData) {
+            // OPTIMIERUNG: Wenn Cloud-Anzahl gleich bleibt und wir nichts hochgeladen haben, überspringen wir den teuren Merge
+            if (initialSyncDone && !needsUpload && cloudData.length === lastCloudCount) {
+                return; 
+            }
+            lastCloudCount = cloudData.length;
+
             let mergedHistory = [...localHistory];
             let dataChanged = false;
             const currentDeleted = window.StorageService.getDeletedQueue();

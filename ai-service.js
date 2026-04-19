@@ -159,6 +159,56 @@ ${processedChunks.join('\n\n')}`;
             return candidate.content.parts[0].text;
         },
 
+        // --- CENTRAL ANALYSIS PIPELINE (DRY) ---
+        /**
+         * Führt den kompletten Analyse-Workflow aus: Chunking -> Einzel-Analysen -> Master-Zusammenfassung.
+         * @param {string} fullTranscript - Das zu analysierende Transkript.
+         * @param {function} onChunkProcessed - Callback für Teilergebnisse (Quality of Life).
+         * @returns {Promise<Object>} - Die Ergebnisse (masterText, processedResults, detectedDeadlines).
+         */
+        runFullAnalysis: async function(fullTranscript, onChunkProcessed = null) {
+            const apiKey = window.CONFIG?.GEMINI_API_KEY;
+            const useProxy = !!window.CONFIG?.EDGE_FUNCTION_URL;
+            
+            if (!apiKey && !useProxy) throw new Error('API Konfiguration fehlt.');
+            if (!fullTranscript || fullTranscript.trim().length < 5) throw new Error('Transkript zu kurz oder leer.');
+
+            const chunks = this.chunkText(fullTranscript);
+            const processedResults = [];
+            const onlyCorrectAnswers = (localStorage.getItem('flex2abi_filter_only') !== 'false');
+
+            // 1. CHUNK LOOP
+            for (let i = 0; i < chunks.length; i++) {
+                const prompt = this.getChunkPrompt(chunks[i], onlyCorrectAnswers);
+                const result = await this.callGemini(prompt, apiKey);
+                processedResults.push(result);
+                
+                if (onChunkProcessed) {
+                    onChunkProcessed(result, chunks[i], i, chunks.length);
+                }
+                
+                // Intelligenter Wait: Proxy (Groq) braucht weniger Puffer als direktes Gemini Free
+                if (i < chunks.length - 1) {
+                    const waitTime = useProxy ? 2500 : 10000; 
+                    await this.wait(waitTime);
+                }
+            }
+
+            // 2. MASTER SUMMARY
+            const masterPrompt = this.getMasterPrompt(processedResults);
+            const masterFullText = await this.callGemini(masterPrompt, apiKey);
+
+            // 3. DEADLINE EXTRACTION
+            const allRawText = [...processedResults, masterFullText].join('\n');
+            const detectedDeadlines = this.extractDeadlines(allRawText);
+
+            return {
+                masterText: masterFullText,
+                chunks: processedResults,
+                deadlines: detectedDeadlines
+            };
+        },
+
         // --- UTILS ---
         extractDeadlines: (text) => {
             if (!text) return [];

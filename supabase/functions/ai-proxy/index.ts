@@ -62,23 +62,8 @@ Deno.serve(async (req: Request) => {
             payload = body.payload;
         }
 
-        // --- DEBUG ACTION: PING ---
-        if (action === 'ping') {
-            return new Response(JSON.stringify({
-                success: true,
-                message: 'Pong!',
-                envStatus: {
-                    hasGemini: !!GEMINI_KEY,
-                    geminiLen: GEMINI_KEY?.length || 0,
-                    hasGroq: !!GROQ_KEY,
-                    groqLen: GROQ_KEY?.length || 0,
-                    user: user.email
-                }
-            }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        }
-
-        // --- GROQ CHAT / SUMMARIZATION (FREE REPLACEMENT FOR GEMINI) ---
-        if (action === 'groq-chat' || action === 'gemini') {
+        // --- AI SUMMARIZATION PORT ---
+        if (action === 'summarize-ai' || action === 'groq-chat' || action === 'gemini') {
             if (!GROQ_KEY) throw new Error('GROQ_API_KEY Secret fehlt.');
             
             const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -90,7 +75,7 @@ Deno.serve(async (req: Request) => {
                 body: JSON.stringify({
                     model: 'llama-3.3-70b-versatile',
                     messages: [
-                        { role: 'system', content: 'Du bist ein hilfreicher Assistent für Abiturienten.' },
+                        { role: 'system', content: 'Du bist ein hilfreicher Assistent für Abiturienten. Fasse Unterrichtsthemen präzise und strukturiert zusammen.' },
                         { role: 'user', content: payload.prompt || payload.contents?.[0]?.parts?.[0]?.text || 'Hallo' }
                     ],
                     temperature: 0.5

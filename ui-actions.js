@@ -143,7 +143,7 @@ window.UIAction = (function() {
                     window.UIRenderer.renderLibraryItems();
                     window.UIRenderer.renderHistory();
                 }
-                window.StorageService.renderDeadlines(document.getElementById('deadline-list'));
+                window.UIRenderer.renderDeadlines(document.getElementById('deadline-list'));
             }, 300);
         },
 
@@ -183,20 +183,9 @@ window.UIAction = (function() {
                     return;
                 }
 
-                // --- Vollständige KI-Pipeline (wie beim Zusammenfassen) ---
-                const onlyCorrectAnswers = (localStorage.getItem('flex2abi_filter_only') !== 'false');
-                const chunks = window.AIService.chunkText(item.transcript);
-                const processedResults = [];
-
-                for (let i = 0; i < chunks.length; i++) {
-                    const prompt = window.AIService.getChunkPrompt(chunks[i], onlyCorrectAnswers);
-                    const result = await window.AIService.callGemini(prompt, apiKey);
-                    processedResults.push(result);
-                    if (i < chunks.length - 1) await window.AIService.wait(10000);
-                }
-
-                const masterPrompt = window.AIService.getMasterPrompt(processedResults);
-                const masterFullText = await window.AIService.callGemini(masterPrompt, apiKey);
+                // --- Nutze neue zentrale Pipeline ---
+                const results = await window.AIService.runFullAnalysis(item.transcript);
+                const masterFullText = results.masterText;
 
                 // --- Metadaten aus Master-Text extrahieren ---
                 let folder = item.folder || 'Allgemein';
@@ -209,8 +198,7 @@ window.UIAction = (function() {
                 if (keywordsMatch?.[1]) keywords = keywordsMatch[1].replace(/\*/g, '').split(',').map(k => k.trim());
 
                 // --- Termine aus dem gesamten KI-Output extrahieren ---
-                const allAiText = [...processedResults, masterFullText].join('\n');
-                const newDeadlines = window.AIService.extractDeadlines(allAiText);
+                const newDeadlines = results.deadlines;
 
                 // Bestehende Deadlines beibehalten und neue ohne Duplikate hinzufügen
                 const existingDeadlines = Array.isArray(item.deadlines) ? item.deadlines : [];
@@ -320,7 +308,7 @@ window.UIAction = (function() {
 
             // Refresh Termine tab if visible
             const deadlineList = document.getElementById('deadline-list');
-            if (deadlineList) window.StorageService.renderDeadlines(deadlineList);
+            if (deadlineList) window.UIRenderer.renderDeadlines(deadlineList);
 
             // Visual feedback on the row
             const row = document.getElementById('deadline-row-' + rowIndex);
@@ -359,7 +347,7 @@ window.UIAction = (function() {
                 
                 // Re-render deadlines view
                 const container = document.getElementById('deadline-list');
-                if (container) window.StorageService.renderDeadlines(container);
+                if (container) window.UIRenderer.renderDeadlines(container);
                 
                 window.UIAction.showVisualFeedback('Gelöscht', 'Termin wurde entfernt.', 'success');
                 setTimeout(() => window.UIAction.hideVisualFeedback(), 1500);
@@ -411,7 +399,7 @@ window.UIAction = (function() {
                 
                 // Re-render
                 const container = document.getElementById('deadline-list');
-                if (container) window.StorageService.renderDeadlines(container);
+                if (container) window.UIRenderer.renderDeadlines(container);
                 
                 window.UIAction.showVisualFeedback('Gespeichert', 'Termin wurde aktualisiert.', 'success');
                 setTimeout(() => window.UIAction.hideVisualFeedback(), 1500);
