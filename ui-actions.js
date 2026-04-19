@@ -608,6 +608,28 @@ window.UIAction = (function() {
 
         exportVocabToCSV: () => {
             if (window.VocabService) window.VocabService.exportToCSV();
+        },
+
+        handleAppExit: async () => {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            const msg = isStandalone 
+                ? 'Möchtest du AbiFlex wirklich beenden? Du kannst die App jederzeit über deinen Homescreen neu starten.' 
+                : 'Möchtest du die Sitzung beenden? Browser-Tabs können nicht direkt geschlossen werden, aber wir versetzen die App in den Ruhezustand.';
+            
+            const confirmed = await window.UIAction.showConfirm('AbiFlex beenden?', msg, 'Beenden');
+            if (confirmed) {
+                const exitOverlay = document.getElementById('exit-overlay');
+                if (exitOverlay) {
+                    exitOverlay.classList.remove('hidden');
+                    exitOverlay.style.display = 'flex';
+                    // Hide main layout
+                    const layout = document.querySelector('.app-layout');
+                    if (layout) layout.style.opacity = '0';
+                    setTimeout(() => {
+                        if (layout) layout.classList.add('hidden');
+                    }, 500);
+                }
+            }
         }
     };
 })();

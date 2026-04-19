@@ -2210,3 +2210,45 @@ body.auth-ready { opacity: 1; }
     font-size: 0.85rem;
     color: var(--text-muted);
 }
+
+/* --- APP EXIT & APK INFO --- */
+#exit-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-color);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+#exit-overlay .card {
+    border: 1px solid var(--accent-primary);
+    box-shadow: 0 0 50px rgba(139, 92, 246, 0.2);
+}
+
+.u-danger-hover:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: var(--danger) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.u-border-accent-soft {
+    border: 1px solid rgba(139, 92, 246, 0.2) !important;
+}
+
+.u-max-w-500 {
+    max-width: 500px !important;
+}
+
+.u-text-center {
+    text-align: center !important;
+}
+
+.app-layout {
+    transition: opacity 0.5s ease;
+}

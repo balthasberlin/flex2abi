@@ -24,14 +24,15 @@ window.VocabService = (function() {
 
             try {
                 const base64Data = await fileToBase64(file);
-                const prompt = `Du bist ein Sprachexperte. Extrahiere alle Vokabeln aus diesem Bild. 
-BEACHTE DIESE REGELN:
-1. Erkenne die Sprache der Vokabeln (z.B. Englisch, Französisch, Spanisch, Latein).
-2. Achte EXTREM GENAU auf Sonderzeichen wie Akzente (é, à, ê), Umlaute (ä, ö, ü), Tilden (ñ) oder Cedille (ç).
-3. Gib das Ergebnis ausschließlich im Format "Wort; Übersetzung" aus.
-4. Nutze KEIN Markdown (keine Backticks), keine Einleitung, keine Anführungszeichen.
-5. Jede Vokabel in eine neue Zeile.
-6. Falls keine Vokabeln gefunden werden, antworte mit "KEINE_VOKABELN".`;
+                const prompt = `Du bist ein Sprachexperte spezialisiert auf Textextraktion aus Fotos. Deine Aufgabe: Extrahiere JEDES Vokabelpaar aus diesem Bild, egal wie komplex das Layout ist.
+BEACHTE DIESE STRENGEN REGELN:
+1. Erkenne automatisch die Quell- und Zielsprache (z.B. Englisch -> Deutsch).
+2. Falls der Text in Spalten angeordnet ist, lese sie logisch als Paare aus (Links -> Rechts).
+3. Achte EXTREM GENAU auf Sonderzeichen (Akzente, Umlaute, Tilden). Korrigiere offensichtliche Scan-Fehler (z.B. 'e' statt 'é').
+4. Gib das Ergebnis AUSSCHLIESSLICH im Format "Wort; Übersetzung" aus. 
+5. Ein Wort pro Zeile. Keine Einleitung, kein Markdown, keine Anführungszeichen.
+6. Wenn das Bild Handschrift enthält, versuche diese so präzise wie möglich zu entziffern.
+7. Falls absolut kein Text erkennbar ist, antworte nur mit "KEINE_VOKABELN".`;
 
                 let responseText;
 

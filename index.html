@@ -42,6 +42,18 @@
             <p class="u-mt-1 u-muted-text u-font-size-xs">Initialisiere AbiFlex...</p>
         </div>
     </div>
+
+    <!-- App Exit Overlay -->
+    <div id="exit-overlay" class="hidden">
+        <div class="card u-text-center u-max-w-500">
+            <div class="u-font-size-xl u-mb-1-5" style="font-size: 4rem;">💤</div>
+            <h2>AbiFlex wird beendet</h2>
+            <p class="u-muted-text u-mb-2">Die App wird sicher in den Ruhezustand versetzt.</p>
+            <button class="record-btn u-w-100" onclick="window.location.reload()">
+                Neu starten 🔄
+            </button>
+        </div>
+    </div>
     <div class="app-layout">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
@@ -80,8 +92,16 @@
             </div>
 
             <div class="sidebar-footer">
-                <p>AbiFlex Hub v2.0</p>
-                <div id="recording-indicator" class="pulse-dot hidden"></div>
+                <div class="u-flex-column u-w-100 u-gap-1">
+                    <button class="nav-item u-w-100 u-danger-hover" onclick="window.UIAction.handleAppExit()">
+                        <span class="nav-icon">🚪</span>
+                        <span class="nav-label">Beenden</span>
+                    </button>
+                    <div class="u-flex u-flex-between u-w-100">
+                        <p>AbiFlex Hub v2.1</p>
+                        <div id="recording-indicator" class="pulse-dot hidden"></div>
+                    </div>
+                </div>
             </div>
         </aside>
 
@@ -300,6 +320,17 @@
                                     <span class="ios-badge">2. Scrolle nach unten</span>
                                     <span class="ios-badge">3. "Zum Home-Bildschirm"</span>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card fade-in u-mb-2 u-border-accent-soft">
+                        <div class="u-flex u-gap-1">
+                            <div class="u-font-size-xl">📲</div>
+                            <div>
+                                <h3 class="u-mt-0 u-mb-0-5">Native App & APK</h3>
+                                <p class="u-muted-text u-font-size-sm">AbiFlex ist eine moderne PWA. Installiere sie über den Browser (siehe oben), um die App-Erfahrung ohne Download-Zwang zu genießen.</p>
+                                <p class="u-muted-text u-font-size-xs u-mt-0-5">Tipp: Mit Tools wie "WebToAPK" kannst du die App bei Bedarf selbst als APK verpacken.</p>
                             </div>
                         </div>
                     </div>
