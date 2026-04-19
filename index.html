@@ -7,6 +7,8 @@
     <title>Flex2Abi - Voice to Smart Summary</title>
     <meta name="description" content="Stimme aufnehmen, transkribieren und intelligent zusammenfassen. Dein KI-Lernassistent fürs Abitur.">
     <meta name="theme-color" content="#0b0c10">
+    <meta name="msapplication-TileColor" content="#0b0c10">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Flex2Abi">
@@ -177,6 +179,7 @@
                         </div>
 
                         <!-- Hidden File Input -->
+                        <!-- 'capture' is for mobile camera support; desktop browsers may show a warning -->
                         <input type="file" id="vocab-file-input" accept="image/*" capture="environment" class="hidden" title="Vokabel-Datei auswählen">
 
                         <div id="vocab-list-empty" class="u-text-center u-p-3">
