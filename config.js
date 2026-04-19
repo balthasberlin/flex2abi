@@ -5,7 +5,7 @@ window.CONFIG = Object.freeze({
 
     // Cloud Sync (Supabase) – Anon Key ist bewusst öffentlich (Row Level Security schützt Daten)
     SUPABASE_URL: "https://ebwlxyvdcsohsxxqmxic.supabase.co",
-    SUPABASE_ANON_KEY: "sb_publishable_Vz7_A2PL_iljsNy7ktTflw_9WoAMfq9",
+    SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVid2x4eXZkY3NvaHN4eHFteGljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwOTU5ODksImV4cCI6MjA5MTY3MTk4OX0.HHJ9zH-Mj-pmELSvI2ny046377CyZxjAN7WUkk5p3AE",
 
     // High-Precision Transkription (Groq Whisper)
     GROQ_API_KEY: "", 

@@ -385,6 +385,16 @@
                 showApp();
             }, 12000);
 
+            // Vorab-Check der Konfiguration
+            const isInvalidKey = window.CONFIG?.SUPABASE_ANON_KEY && !window.CONFIG.SUPABASE_ANON_KEY.startsWith('eyJ');
+            if (isInvalidKey) {
+                console.error("Config Error: SUPABASE_ANON_KEY is not a valid JWT.");
+                const loaderText = document.querySelector('#auth-loader p');
+                if (loaderText) loaderText.innerHTML = "⚠️ <strong>Konfigurations-Fehler:</strong><br>Der Supabase-Key ist ungültig.<br>Bitte prüfe deine config.js.";
+                clearTimeout(fallbackTimeout);
+                return;
+            }
+
             try {
                 const check = async (retries = 0) => {
                     const sb = window.supabaseClient;
