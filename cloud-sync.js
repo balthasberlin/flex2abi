@@ -20,19 +20,39 @@
 
     // 1. Initialize Supabase
     function initSupabase() {
-        if (typeof CONFIG === 'undefined' || !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY || CONFIG.SUPABASE_URL.includes('DEINE')) {
-            console.warn('Cloud Sync: Supabase Konfiguration fehlt oder ist ungültig.');
-            return false;
-        }
-        
-        try {
-            const { createClient } = window.supabase;
-            supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        if (window.supabaseClient) {
+            supabase = window.supabaseClient;
             return true;
-        } catch (e) {
-            console.error('Cloud Sync: Fehler bei der Initialisierung:', e);
-            return false;
         }
+        // Fallback: Falls noch nicht bereit, wird durch den Event-Loop später darauf zugegriffen.
+        // In der Praxis wird cloud-sync.js erst nach config.js geladen.
+        return false;
+    }
+
+    // Warte kurz, bis der Client bereit ist, falls der erste Check fehlschlägt
+    const retryInit = setInterval(() => {
+        if (initSupabase()) {
+            clearInterval(retryInit);
+            checkUser();
+            setupAuthEvents();
+        }
+    }, 50);
+
+    function setupAuthEvents() {
+        if (!supabase) return;
+        // Subscribe to auth changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            handleAuthStateChange(session?.user || null);
+        });
+
+        loginBtn.addEventListener('click', handleLogin);
+        signupBtn.addEventListener('click', handleSignup);
+        closeCloudBtn.addEventListener('click', () => cloudModal.classList.add('hidden'));
+
+        // Enter-Taste zum Anmelden
+        const handleEnterKey = (e) => { if (e.key === 'Enter') handleLogin(); };
+        emailInput.addEventListener('keydown', handleEnterKey);
+        passwordInput.addEventListener('keydown', handleEnterKey);
     }
 
     // 2. Auth Listeners
@@ -245,47 +265,32 @@
         statusMsg.classList.remove('hidden');
     }
 
-    // 5. Setup Events
-    if (initSupabase()) {
-        checkUser();
-        // Subscribe to auth changes
-        supabase.auth.onAuthStateChange((event, session) => {
-            handleAuthStateChange(session?.user || null);
-        });
+    // 5. Setup Events.
+    // Events are now setup via setupAuthEvents() when supabaseClient is ready.
+    // Periodic sync every 2 minutes (less aggressive)
+    setInterval(syncData, 120000);
 
-        loginBtn.addEventListener('click', handleLogin);
-        signupBtn.addEventListener('click', handleSignup);
-        closeCloudBtn.addEventListener('click', () => cloudModal.classList.add('hidden'));
-
-        // Enter-Taste zum Anmelden
-        const handleEnterKey = (e) => { if (e.key === 'Enter') handleLogin(); };
-        emailInput.addEventListener('keydown', handleEnterKey);
-        passwordInput.addEventListener('keydown', handleEnterKey);
-        
-        // Periodic sync every 2 minutes (less aggressive)
-        setInterval(syncData, 120000);
-
-        // Offline/Online detection
-        function updateOfflineBadge(isOffline) {
-            if (!currentUser) return;
-            const badge = cloudStatusContainer.querySelector('.cloud-active span:last-child');
-            if (badge) {
-                if (isOffline) {
-                    badge.textContent = '⚠️ Offline – Daten lokal gesichert';
-                    badge.className = 'u-font-size-xs u-gold-text';
-                } else {
-                    badge.textContent = 'Cloud-Sync aktiv';
-                    badge.className = 'u-font-size-xs u-accent-text';
-                }
+    // Offline/Online detection
+    function updateOfflineBadge(isOffline) {
+        if (!currentUser) return;
+        const badge = cloudStatusContainer.querySelector('.cloud-active span:last-child');
+        if (badge) {
+            if (isOffline) {
+                badge.textContent = '⚠️ Offline – Daten lokal gesichert';
+                badge.className = 'u-font-size-xs u-gold-text';
+            } else {
+                badge.textContent = 'Cloud-Sync aktiv';
+                badge.className = 'u-font-size-xs u-accent-text';
             }
         }
-
-        window.addEventListener('offline', () => updateOfflineBadge(true));
-        window.addEventListener('online', () => {
-            updateOfflineBadge(false);
-            syncData(); // Sofort synchronisieren wenn wieder online
-        });
     }
+
+    window.addEventListener('offline', () => updateOfflineBadge(true));
+    window.addEventListener('online', () => {
+        updateOfflineBadge(false);
+        syncData(); // Sofort synchronisieren wenn wieder online
+    });
+
 
     // 6. Public API for Audio & Auth
     window.CloudSync = {

@@ -211,11 +211,13 @@
         }
 
         // --- Init Supabase ---
-        try {
-            if (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL && !CONFIG.SUPABASE_URL.includes('DEINE')) {
-                sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        (function waitForClient() {
+            if (window.supabaseClient) {
+                sb = window.supabaseClient;
+            } else {
+                setTimeout(waitForClient, 50);
             }
-        } catch(e) { console.warn('Supabase init:', e); }
+        })();
 
         // --- Alpha-Gate (SHA-256 Verifikation) ---
         // Das Alpha-Passwort steht hier NUR als Hash (nie im Klartext).

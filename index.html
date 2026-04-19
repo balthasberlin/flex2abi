@@ -387,9 +387,10 @@
 
             try {
                 const check = async (retries = 0) => {
-                    if (window.supabase) {
+                    const sb = window.supabaseClient;
+                    if (sb) {
                         try {
-                            const { data: { session } } = await window.supabase.auth.getSession();
+                            const { data: { session } } = await sb.auth.getSession();
                             clearTimeout(fallbackTimeout);
                             if (!session) {
                                 window.location.replace('login.html');
@@ -403,7 +404,7 @@
                     } else if (retries < 100) { // Erhöht auf 10 Sekunden (100 * 100ms)
                         setTimeout(() => check(retries + 1), 100);
                     } else {
-                        console.error("Supabase fail to load after 10s");
+                        console.error("Supabase Client failed to init after 10s");
                         showApp();
                     }
                 };

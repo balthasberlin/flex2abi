@@ -15,3 +15,18 @@ window.CONFIG = Object.freeze({
     // API Keys bleiben dann serverseitig und sind im Browser nicht mehr sichtbar.
     EDGE_FUNCTION_URL: "https://ebwlxyvdcsohsxxqmxic.supabase.co/functions/v1/ai-proxy"
 });
+
+// ZENTRALE SUPABASE INITIALISIERUNG
+// Versuche den Client zu erstellen, sobald die Library (via CDN) geladen ist.
+(function initSupabase() {
+    const create = () => {
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+            window.supabaseClient = window.supabase.createClient(window.CONFIG.SUPABASE_URL, window.CONFIG.SUPABASE_ANON_KEY);
+            console.log("Supabase Client initialized globally.");
+        } else {
+            // Falls das Script noch nicht geladen ist, kurz warten
+            setTimeout(create, 50);
+        }
+    };
+    create();
+})();
