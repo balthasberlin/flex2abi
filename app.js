@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(CONFIG.EDGE_FUNCTION_URL, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'x-authorization': `Bearer ${token}`,
                         'apikey': CONFIG.SUPABASE_ANON_KEY
                     },
                     body: formData

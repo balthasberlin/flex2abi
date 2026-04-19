@@ -330,7 +330,7 @@
                 const response = await fetch(CONFIG.EDGE_FUNCTION_URL, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'x-authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                         'apikey': CONFIG.SUPABASE_ANON_KEY
                     },

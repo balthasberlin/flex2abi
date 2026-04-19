@@ -101,7 +101,7 @@ ${processedChunks.join('\n\n')}`;
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
+                        'x-authorization': `Bearer ${token}`,
                         'apikey': window.CONFIG.SUPABASE_ANON_KEY
                     },
                     body: JSON.stringify({
