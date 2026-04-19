@@ -1,5 +1,5 @@
 /**
- * Flex2Abi - UI Actions Module
+ * AbiFlex - UI Actions Module
  * Encapsulates global feedback modals and historic action triggers.
  */
 

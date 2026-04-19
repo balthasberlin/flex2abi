@@ -129,7 +129,7 @@
             if (!delError) {
                 window.StorageService.clearDeletedQueue(deletedQueue);
             } else {
-                console.error('Cloud Sync Deletion Fehler:', delError);
+                console.error('AbiFlex - Cloud Sync Deletion Fehler:', delError);
             }
         }
 

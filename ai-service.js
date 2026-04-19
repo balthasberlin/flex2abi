@@ -1,5 +1,5 @@
 /**
- * Flex2Abi - AI Service Module
+ * AbiFlex - AI Service Module
  * Managing prompts, API communication, and text processing algorithms.
  */
 
@@ -111,6 +111,7 @@ ${processedChunks.join('\n\n')}`;
                 });
 
                 if (!response.ok) {
+                    console.warn('AbiFlex: Wake Lock error:', err);
                     const errorData = await response.json();
                     throw new Error(errorData.error?.message || errorData.error || `Proxy Fehler ${response.status}`);
                 }
@@ -175,7 +176,8 @@ ${processedChunks.join('\n\n')}`;
 
             const chunks = this.chunkText(fullTranscript);
             const processedResults = [];
-            const onlyCorrectAnswers = (localStorage.getItem('flex2abi_filter_only') !== 'false');
+            const onlyCorrectAnswers = (localStorage.getItem('abiflex_filter_only') !== 'false');
+            const useNoiseSuppression = localStorage.getItem('abiflex_noise_suppression') !== 'false';
 
             // 1. CHUNK LOOP
             for (let i = 0; i < chunks.length; i++) {

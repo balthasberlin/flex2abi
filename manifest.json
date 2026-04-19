@@ -1,6 +1,6 @@
 {
-    "name": "Flex2Abi – KI-Lernassistent",
-    "short_name": "Flex2Abi",
+    "name": "AbiFlex – KI-Lernassistent",
+    "short_name": "AbiFlex",
     "description": "Stimme aufnehmen, transkribieren und intelligent zusammenfassen. Dein Abi-Assistent.",
     "start_url": "./index.html",
     "scope": "./",

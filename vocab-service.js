@@ -1,5 +1,5 @@
 /**
- * Flex2Abi - Vocab Service Module
+ * AbiFlex - Vocab Service Module
  * Handles OCR for vocabulary lists using Gemini Vision and CSV Export.
  */
 
@@ -137,7 +137,7 @@ BEACHTE DIESE REGELN:
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            link.setAttribute("download", `Flex2Abi_Vokabeln_${new Date().toLocaleDateString('de-DE').replace(/\./g, '-')}.csv`);
+            link.setAttribute("download", `AbiFlex_Vokabeln_${new Date().toLocaleDateString('de-DE').replace(/\./g, '-')}.csv`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();

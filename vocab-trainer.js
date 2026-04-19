@@ -1,5 +1,5 @@
 /**
- * Flex2Abi - Vocab Trainer Logic Module
+ * AbiFlex - Vocab Trainer Logic Module
  * Manages training sessions, flashcard states, and Spaced Repetition (SRS).
  */
 

@@ -1,5 +1,5 @@
 /**
- * Flex2Abi - Audio Engine Module
+ * AbiFlex - Audio Engine Module
  * Managing hardware access, real-time filtering, and visualizer logic.
  */
 
@@ -13,7 +13,7 @@ window.AudioEngine = (function() {
     return {
         // --- HARDWARE CONSTRAINTS ---
         getConstraints: () => {
-            const useNoiseSuppression = localStorage.getItem('flex2abi_noise_suppression') !== 'false';
+            const useNoiseSuppression = localStorage.getItem('abiflex_noise_suppression') !== 'false';
             return {
                 audio: {
                     echoCancellation: useNoiseSuppression,
@@ -32,7 +32,7 @@ window.AudioEngine = (function() {
             const source = filterContext.createMediaStreamSource(sourceStream);
             const filteredDest = filterContext.createMediaStreamDestination();
 
-            const useNoiseSuppression = localStorage.getItem('flex2abi_noise_suppression') !== 'false';
+            const useNoiseSuppression = localStorage.getItem('abiflex_noise_suppression') !== 'false';
 
             if (useNoiseSuppression) {
                 // Highpass (cut below 80Hz)
@@ -123,7 +123,7 @@ window.AudioEngine = (function() {
                 try {
                     wakeLock = await navigator.wakeLock.request('screen');
                 } catch (err) {
-                    console.warn('Flex2Abi: Wake Lock error:', err);
+                    console.warn('AbiFlex: Wake Lock error:', err);
                 }
             }
         },

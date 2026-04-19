@@ -1,10 +1,10 @@
 /**
- * Flex2Abi – Service Worker
+ * AbiFlex – Service Worker
  * Cacht statische Dateien für schnellen Start und Offline-Grundfunktionalität.
  * Strategie: Network-First für API-Calls, Cache-First für statische Assets.
  */
 
-const CACHE_NAME = 'flex2abi-v2';
+const CACHE_NAME = 'abiflex-v1';
 const STATIC_ASSETS = [
     './',
     './index.html',

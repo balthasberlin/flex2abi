@@ -1,5 +1,5 @@
 /**
- * Flex2Abi - Storage Service Module
+ * AbiFlex - Storage Service Module
  * Managing localStorage persistence and data rendering logic.
  */
 

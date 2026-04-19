@@ -1,5 +1,5 @@
 /**
- * Flex2Abi - Core Entry Point
+ * AbiFlex - Core Entry Point
  * Coordinating UI events and delegating tasks to specialized services.
  */
 
@@ -86,10 +86,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    initToggle(filterToggle, 'flex2abi_filter_only', 'true');
-    initToggle(backupToggle, 'flex2abi_audio_backup', 'false');
-    initToggle(noiseToggle, 'flex2abi_noise_suppression', 'true');
-    initToggle(notificationToggle, 'flex2abi_notifications_enabled', 'true');
+    initToggle(filterToggle, 'abiflex_filter_only', 'true');
+    initToggle(backupToggle, 'abiflex_audio_backup', 'false');
+    initToggle(noiseToggle, 'abiflex_noise_suppression', 'true');
+    initToggle(notificationToggle, 'abiflex_notifications_enabled', 'true');
 
     // --- NAVIGATION LOGIC ---
     function setupNavigation() {
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (recordingIndicator) recordingIndicator.classList.remove('hidden');
             if (micIcon) micIcon.classList.add('hidden');
             if (stopIcon) stopIcon.classList.remove('hidden');
-            const useNoiseSuppression = localStorage.getItem('flex2abi_noise_suppression') !== 'false';
+            const useNoiseSuppression = localStorage.getItem('abiflex_noise_suppression') !== 'false';
             statusText.textContent = useNoiseSuppression ? 'Aufnahme läuft (Filter aktiv)...' : 'Aufnahme läuft (RAW-Modus)...';
             statusText.className = useNoiseSuppression ? 'u-accent-text' : 'u-gold-text';
 

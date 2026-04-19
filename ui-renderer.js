@@ -1,5 +1,5 @@
 /**
- * Flex2Abi - UI Renderer Module
+ * AbiFlex - UI Renderer Module
  * Encapsulates all HTML generation and list rendering logic.
  */
 

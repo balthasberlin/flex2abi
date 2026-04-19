@@ -1,12 +1,12 @@
 /**
- * Flex2Abi - Notification Service
+ * AbiFlex - Notification Service
  * Manages browser notifications and periodic reminder checks.
  */
 
 window.NotificationService = (function() {
     
-    const STORAGE_KEY_NOTIFIED = 'flex2abi_notified_reminders';
-    const SETTING_KEY = 'flex2abi_notifications_enabled';
+    const STORAGE_KEY_NOTIFIED = 'abiflex_notified_reminders';
+    const SETTING_KEY = 'abiflex_notifications_enabled';
 
     const getNotifiedList = () => JSON.parse(localStorage.getItem(STORAGE_KEY_NOTIFIED) || '[]');
     const saveNotifiedList = (list) => localStorage.setItem(STORAGE_KEY_NOTIFIED, JSON.stringify(list));
