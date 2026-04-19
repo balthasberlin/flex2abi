@@ -2253,6 +2253,15 @@ body.auth-ready { opacity: 1; }
     transition: opacity 0.5s ease;
 }
 
+/* --- SYSTEM CLEANUP & GLOBAL REFINEMENTS --- */
+button, .nav-item, .card, .modern-input {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.record-btn:active, .secondary-btn:active {
+    transform: scale(0.98);
+}
+
 /* --- QUIZ STYLES --- */
 .quiz-option-btn {
     display: block;
@@ -2266,7 +2275,6 @@ body.auth-ready { opacity: 1; }
     text-align: left;
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
 }

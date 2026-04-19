@@ -116,24 +116,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function switchView(viewId) {
+        // Hide all views first
         views.forEach(v => v.classList.add('hidden'));
+        
+        // Show target view
         const activeView = document.getElementById('view-' + viewId);
-        if (activeView) activeView.classList.remove('hidden');
-
-        if (viewId === 'library') {
-            document.getElementById('subject-detail-view').classList.add('hidden');
-            if (librarySearch) librarySearch.value = ''; // Reset ghost input
-            libraryGrid.classList.remove('hidden');
-            if (window.UIRenderer.renderLibraryItems) window.UIRenderer.renderLibraryItems();
-            if (window.UIRenderer.renderHistory) window.UIRenderer.renderHistory();
-        } else if (viewId === 'deadlines') {
-            window.UIRenderer.renderDeadlines(document.getElementById('deadline-list'));
-            if (window.NotificationService) window.NotificationService.checkReminders();
-        } else if (viewId === 'vocab') {
-            if (window.UIRenderer.renderVocabList) window.UIRenderer.renderVocabList();
-        } else if (viewId === 'quiz') {
-            if (window.UIRenderer.renderQuizSetup) window.UIRenderer.renderQuizSetup();
+        if (activeView) {
+            activeView.classList.remove('hidden');
+        } else {
+            console.warn(`View 'view-${viewId}' not found.`);
         }
+
+        // View-specific initializers
+        const initializers = {
+            'library': () => {
+                const detailView = document.getElementById('subject-detail-view');
+                if (detailView) detailView.classList.add('hidden');
+                if (librarySearch) librarySearch.value = '';
+                if (libraryGrid) libraryGrid.classList.remove('hidden');
+                if (window.UIRenderer.renderLibraryItems) window.UIRenderer.renderLibraryItems();
+                if (window.UIRenderer.renderHistory) window.UIRenderer.renderHistory();
+            },
+            'deadlines': () => {
+                const list = document.getElementById('deadline-list');
+                if (window.UIRenderer.renderDeadlines) window.UIRenderer.renderDeadlines(list);
+                if (window.NotificationService) window.NotificationService.checkReminders();
+            },
+            'vocab': () => {
+                if (window.UIRenderer.renderVocabList) window.UIRenderer.renderVocabList();
+            },
+            'quiz': () => {
+                if (window.UIRenderer.renderQuizSetup) window.UIRenderer.renderQuizSetup();
+            }
+        };
+
+        if (initializers[viewId]) initializers[viewId]();
 
         // Update Header Titles
         const titles = {
@@ -144,7 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
             'deadlines': ['Termins-Radar', 'Alle Deadlines, Klausuren und Abgaben auf einen Blick.'],
             'settings': ['System-Einstellungen', 'Konfiguriere Audio-Filter, KI-Verhalten und Cloud-Speicher.']
         };
-        if (titles[viewId]) {
+
+        if (titles[viewId] && viewTitle && viewSubtitle) {
             viewTitle.textContent = titles[viewId][0];
             viewSubtitle.textContent = titles[viewId][1];
         }

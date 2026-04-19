@@ -655,10 +655,10 @@ window.UIAction = (function() {
                 }
             } catch (err) {
                 console.error("Quiz Start Error:", err);
-                this.showVisualFeedback("Fehler beim Erstellen des Quiz: " + err.message, "error");
+                this.showVisualFeedback("Fehler beim Erstellen", "Die KI konnte das Quiz nicht generieren. Versuche es mit einem anderen Thema.", "error");
                 
-                // Allow user to retry
-                setTimeout(() => this.hideVisualFeedback(), 3000);
+                // Reset button after feedback
+                setTimeout(() => this.hideVisualFeedback(), 4000);
             }
         },
 

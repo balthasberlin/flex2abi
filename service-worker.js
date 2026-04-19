@@ -4,7 +4,7 @@
  * Strategie: Network-First für API-Calls, Cache-First für statische Assets.
  */
 
-const CACHE_NAME = 'abiflex-v1';
+const CACHE_NAME = 'abiflex-v2.2-clean';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -16,6 +16,8 @@ const STATIC_ASSETS = [
     './storage-service.js',
     './cloud-sync.js',
     './vocab-service.js',
+    './vocab-trainer.js',
+    './quiz-service.js',
     './ui-renderer.js',
     './ui-actions.js',
     './app.js',

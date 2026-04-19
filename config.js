@@ -22,7 +22,6 @@ window.CONFIG = Object.freeze({
     const create = () => {
         if (window.supabase && typeof window.supabase.createClient === 'function') {
             window.supabaseClient = window.supabase.createClient(window.CONFIG.SUPABASE_URL, window.CONFIG.SUPABASE_ANON_KEY);
-            console.log("Supabase Client initialized globally.");
         } else {
             // Falls das Script noch nicht geladen ist, kurz warten
             setTimeout(create, 50);

@@ -62,27 +62,27 @@
             </div>
             
             <nav class="sidebar-nav">
-                <button class="nav-item active" data-view="recorder">
+                <button class="nav-item active" data-view="recorder" aria-label="Aufnahme Studio öffnen">
                     <span class="nav-icon">🔴</span>
                     <span class="nav-label">Aufnahme</span>
                 </button>
-                <button class="nav-item" data-view="library">
+                <button class="nav-item" data-view="library" aria-label="Bibliothek öffnen">
                     <span class="nav-icon">📚</span>
                     <span class="nav-label">Bibliothek</span>
                 </button>
-                <button class="nav-item" data-view="vocab">
+                <button class="nav-item" data-view="vocab" aria-label="Vokabeltrainer öffnen">
                     <span class="nav-icon">📝</span>
                     <span class="nav-label">Vokabeln</span>
                 </button>
-                <button class="nav-item" data-view="deadlines">
+                <button class="nav-item" data-view="deadlines" aria-label="Terminkalender öffnen">
                     <span class="nav-icon">📅</span>
                     <span class="nav-label">Termine</span>
                 </button>
-                <button class="nav-item" data-view="quiz">
+                <button class="nav-item" data-view="quiz" aria-label="KI-Lernhilfe öffnen">
                     <span class="nav-icon">🧠</span>
                     <span class="nav-label">Lernhilfe</span>
                 </button>
-                <button class="nav-item" data-view="settings">
+                <button class="nav-item" data-view="settings" aria-label="Optionen öffnen">
                     <span class="nav-icon">⚙️</span>
                     <span class="nav-label">Optionen</span>
                 </button>
@@ -97,7 +97,7 @@
 
             <div class="sidebar-footer">
                 <div class="u-flex-column u-w-100 u-gap-1">
-                    <button class="nav-item u-w-100 u-danger-hover" onclick="window.UIAction.handleAppExit()">
+                    <button class="nav-item u-w-100 u-danger-hover" onclick="window.UIAction.handleAppExit()" aria-label="App beenden">
                         <span class="nav-icon">🚪</span>
                         <span class="nav-label">Beenden</span>
                     </button>
@@ -469,7 +469,7 @@
         <div class="modal-content card">
             <div class="u-flex-between u-mb-1-5">
                 <h2 class="u-mb-0 u-gold-text"> Abitur-Lernzettel</h2>
-                <button id="close-modal-btn" class="btn-icon">&times;</button>
+                <button id="close-modal-btn" class="btn-icon" aria-label="Modal schließen">&times;</button>
             </div>
             <div id="master-modal-body" class="summary-container u-overflow-y-auto max-h-60">
                 <p>Generiere ultimativen Lernzettel...</p>
