@@ -139,11 +139,9 @@ window.UIAction = (function() {
             }
             
             setTimeout(() => {
-                if (window.UIRenderer) {
-                    window.UIRenderer.renderLibraryItems();
-                    window.UIRenderer.renderHistory();
+                if (window.APP_UI && window.APP_UI.refreshAll) {
+                    window.APP_UI.refreshAll();
                 }
-                window.UIRenderer.renderDeadlines(document.getElementById('deadline-list'));
             }, 300);
         },
 
@@ -473,14 +471,16 @@ window.UIAction = (function() {
             const subject = window.APP_STATE?.lastTargetSubject || 'Allgemein';
             
             try {
+                if (!window.VocabService) throw new Error('Vokabel-Service nicht geladen.');
                 const result = await window.VocabService.processImage(file, subject);
                 if (result.success) {
                     if (window.UIRenderer) window.UIRenderer.renderVocabList();
-                    // Reset input
-                    event.target.value = '';
                 }
             } catch (e) {
                 window.UIAction.showError('Scan-Fehler', e.message);
+            } finally {
+                // Reset input so the same file can be selected again
+                event.target.value = '';
             }
         },
 

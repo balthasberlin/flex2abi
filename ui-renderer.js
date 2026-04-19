@@ -249,6 +249,34 @@ window.UIRenderer = (function() {
             });
         },
 
+        renderRecentSummaries: () => {
+            const container = document.getElementById('recent-summaries-container');
+            const section = document.getElementById('recent-summaries-section');
+            if (!container || !section) return;
+
+            const history = window.StorageService.getHistory();
+            if (history.length === 0) {
+                section.classList.add('hidden');
+                return;
+            }
+
+            section.classList.remove('hidden');
+            container.innerHTML = '';
+            
+            // Show only the 3 most recent
+            const recent = history.slice(0, 3);
+            recent.forEach(item => {
+                try {
+                    const div = document.createElement('div');
+                    div.className = 'history-item fade-in';
+                    div.innerHTML = createHistoryCardHTML(item, true); // True to show folder badge
+                    container.appendChild(div);
+                } catch (err) {
+                    console.error("Failed to render Recent Summary:", err, item);
+                }
+            });
+        },
+
         renderHistory: () => {
             const historyContainer = document.getElementById('history-container');
             if (!historyContainer) return;
