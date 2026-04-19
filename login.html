@@ -259,12 +259,27 @@
             }).catch(function() { clearTimeout(t); });
         }
 
-        // Load remembered email
-        (function loadRemembered() {
+        // Load remembered email & handle URL parameters (Errors/Confirmations)
+        (function initFromUrl() {
+            // 1. Remembered Email
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {
                 emailIn.value = saved;
                 rememberToggle.checked = true;
+            }
+
+            // 2. Handle URL parameters (Errors or Success)
+            const params = new URLSearchParams(window.location.search);
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            
+            // Check for Errors from Supabase (often in Hash)
+            const error = hashParams.get('error') || params.get('error');
+            const errorDesc = hashParams.get('error_description') || params.get('error_description');
+            
+            if (error) {
+                showStatus(`Fehler: ${errorDesc || error}`, 'error');
+            } else if (params.get('confirmed') === 'true') {
+                showStatus('✓ E-Mail erfolgreich bestätigt! Du kannst dich jetzt einloggen.', 'success');
             }
         })();
 
@@ -327,9 +342,24 @@
             setLoading(true);
             showStatus('', '');
 
+            // Dynamically determine redirect URL (works for local dev & production)
+            var baseUrl = window.location.href.split('?')[0].split('#')[0];
+            if (baseUrl.endsWith('/')) baseUrl += 'index.html';
+            
+            // If the user lands on login.html after clicking the email link, we want to show a success msg
+            var signupRedirect = baseUrl.includes('login.html') 
+                ? baseUrl + '?confirmed=true' 
+                : baseUrl.replace('index.html', 'login.html') + '?confirmed=true';
+
             var authPromise = mode === 'login'
                 ? sb.auth.signInWithPassword({ email: email, password: password })
-                : sb.auth.signUp({ email: email, password: password });
+                : sb.auth.signUp({ 
+                    email: email, 
+                    password: password,
+                    options: {
+                        emailRedirectTo: signupRedirect
+                    }
+                });
 
             var timeout = new Promise(function(_, reject) {
                 setTimeout(function() { reject(new Error('Zeitüberschreitung – Server nicht erreichbar.')); }, 8000);

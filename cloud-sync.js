@@ -258,7 +258,20 @@
         const password = passwordInput.value;
         showMessage('Status: Erstelle Account...', 'u-primary-text');
 
-        const { error } = await supabase.auth.signUp({ email, password });
+        // Dynamically determine redirect URL
+        var baseUrl = window.location.href.split('?')[0].split('#')[0];
+        if (baseUrl.endsWith('/')) baseUrl += 'index.html';
+        var signupRedirect = baseUrl.includes('login.html') 
+            ? baseUrl + '?confirmed=true' 
+            : baseUrl.replace('index.html', 'login.html') + '?confirmed=true';
+
+        const { error } = await supabase.auth.signUp({ 
+            email, 
+            password,
+            options: {
+                emailRedirectTo: signupRedirect
+            }
+        });
         if (error) {
             showMessage('Fehler: ' + error.message, 'u-danger-text');
         } else {
