@@ -511,9 +511,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.UIRenderer.renderDeadlineConfirmations(results.deadlines, window.APP_STATE.currentSessionId);
             }
         } catch (e) {
-
-
-        } catch (e) {
             summaryDiv.innerHTML = `<p style="color: var(--danger)">Fehler: ${e.message}</p>`;
         } finally {
             window.UIAction.hideVisualFeedback();
