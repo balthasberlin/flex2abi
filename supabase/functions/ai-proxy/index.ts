@@ -1,6 +1,6 @@
 /// <reference path="../deno.d.ts" />
 /**
- * Flex2Abi – AI Proxy Edge Function (v2.3)
+ * Flex2Abi – AI Proxy Edge Function (v2.4)
  * Sichere serverseitige Weiterleitung zu Gemini & Groq APIs.
  */
 
