@@ -305,24 +305,74 @@ window.UIRenderer = (function() {
             const emptyState = document.getElementById('vocab-list-empty');
             const tableContainer = document.getElementById('vocab-table-container');
             const trainBtn = document.getElementById('start-training-btn');
+            const statsContainer = document.getElementById('vocab-stats-container');
+            const filterBar = document.getElementById('vocab-filter-bar');
             
             if (!listBody || !emptyState || !tableContainer) return;
 
-            const vocab = window.StorageService.getVocabList();
+            const allVocab = window.StorageService.getVocabList();
             
-            if (vocab.length === 0) {
+            if (allVocab.length === 0) {
                 emptyState.classList.remove('hidden');
                 tableContainer.classList.add('hidden');
                 if (trainBtn) trainBtn.classList.add('hidden');
+                if (statsContainer) statsContainer.classList.add('hidden');
+                if (filterBar) filterBar.classList.add('hidden');
                 return;
             }
 
             emptyState.classList.add('hidden');
             tableContainer.classList.remove('hidden');
             if (trainBtn) trainBtn.classList.remove('hidden');
-            
-            listBody.innerHTML = vocab.map(v => {
+            if (statsContainer) statsContainer.classList.remove('hidden');
+            if (filterBar) filterBar.classList.remove('hidden');
+
+            // 1. Get filter states
+            const searchTerm = (document.getElementById('vocab-search')?.value || '').toLowerCase();
+            const subjectFilter = document.getElementById('vocab-subject-filter')?.value || 'Alle';
+
+            // 2. Filter list
+            const filteredVocab = allVocab.filter(v => {
+                const matchesSearch = v.word.toLowerCase().includes(searchTerm) || 
+                                     v.translation.toLowerCase().includes(searchTerm);
+                const matchesSubject = subjectFilter === 'Alle' || v.subject === subjectFilter;
+                return matchesSearch && matchesSubject;
+            });
+
+            // 3. Update Stats (based on ALL vocab, or filtered? Let's use ALL for global progress)
+            const stats = {
+                total: allVocab.length,
+                learning: allVocab.filter(v => (v.level || 1) <= 3).length,
+                mastered: allVocab.filter(v => (v.level || 1) > 3).length
+            };
+
+            const statsTotal = document.getElementById('stats-total');
+            const statsLearning = document.getElementById('stats-learning');
+            const statsMastered = document.getElementById('stats-mastered');
+
+            if (statsTotal) statsTotal.textContent = stats.total;
+            if (statsLearning) statsLearning.textContent = stats.learning;
+            if (statsMastered) statsMastered.textContent = stats.mastered;
+
+            // 4. Update Subject Filter Dropdown (only if not already interactive)
+            const subjectSelect = document.getElementById('vocab-subject-filter');
+            if (subjectSelect && !subjectSelect.dataset.initialized) {
+                const subjects = [...new Set(allVocab.map(v => v.subject || 'Allgemein'))];
+                const currentVal = subjectSelect.value;
+                subjectSelect.innerHTML = '<option value="Alle">Alle Fächer</option>' + 
+                    subjects.map(s => `<option value="${s}" ${s === currentVal ? 'selected' : ''}>${s}</option>`).join('');
+                
+                subjectSelect.dataset.initialized = "true"; // Simple way to prevent re-rendering options every time if not needed
+                
+                subjectSelect.addEventListener('change', () => window.UIRenderer.renderVocabList());
+                document.getElementById('vocab-search')?.addEventListener('input', () => window.UIRenderer.renderVocabList());
+            }
+
+            // 5. Render Table rows
+            listBody.innerHTML = filteredVocab.map(v => {
                 const subjectIcon = window.StorageService.getFolderIcon(v.subject || 'Allgemein');
+                const isMastered = (v.level || 1) > 3;
+
                 let levelHtml = '<div class="level-dots">';
                 for(let i=1; i<=5; i++) {
                     levelHtml += `<div class="level-dot ${i <= (v.level || 1) ? 'active' : ''}"></div>`;
@@ -330,7 +380,7 @@ window.UIRenderer = (function() {
                 levelHtml += '</div>';
 
                 return `
-                    <tr class="fade-in">
+                    <tr class="fade-in ${isMastered ? 'vocab-row-mastered' : ''}">
                         <td><strong class="u-text-white">${v.word}</strong></td>
                         <td>${v.translation}</td>
                         <td>
@@ -345,6 +395,10 @@ window.UIRenderer = (function() {
                     </tr>
                 `;
             }).join('');
+
+            if (filteredVocab.length === 0 && allVocab.length > 0) {
+                listBody.innerHTML = `<tr><td colspan="5" class="u-text-center u-p-2 u-muted-text">Keine Ergebnisse für deine Suche.</td></tr>`;
+            }
         },
 
         renderTrainerSetup: (subjects) => {

@@ -28,13 +28,14 @@ window.VocabService = (function() {
 BEACHTE DIESE REGELN:
 1. Erkenne die Sprache der Vokabeln (z.B. Englisch, Französisch, Spanisch, Latein).
 2. Achte EXTREM GENAU auf Sonderzeichen wie Akzente (é, à, ê), Umlaute (ä, ö, ü), Tilden (ñ) oder Cedille (ç).
-3. Gib das Ergebnis ausschließlich im CSV-Format aus (Wort; Übersetzung).
-4. Keine Einleitung, kein "Hier sind die Vokabeln". Nur die CSV-Zeilen.
-5. Beispiel-Format: "élève; Schüler" oder "mañana; Morgen".`;
+3. Gib das Ergebnis ausschließlich im Format "Wort; Übersetzung" aus.
+4. Nutze KEIN Markdown (keine Backticks), keine Einleitung, keine Anführungszeichen.
+5. Jede Vokabel in eine neue Zeile.
+6. Falls keine Vokabeln gefunden werden, antworte mit "KEINE_VOKABELN".`;
 
                 let responseText;
 
-                // Use Proxy if configured
+                // ... (API call logic remains same) ...
                 if (window.CONFIG?.EDGE_FUNCTION_URL) {
                     const token = window.CloudSync?.getAuthToken ? await window.CloudSync.getAuthToken() : null;
                     if (!token) throw new Error('Nicht eingeloggt – Proxy benötigt Authentifizierung.');
@@ -92,16 +93,30 @@ BEACHTE DIESE REGELN:
                     responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
                 }
 
-                if (!responseText) throw new Error('Keine Antwort von der KI erhalten.');
+                if (!responseText || responseText.includes('KEINE_VOKABELN')) {
+                    throw new Error('Es konnten keine Vokabeln im Bild erkannt werden.');
+                }
 
-                // Parse CSV result
-                const lines = responseText.trim().split('\n');
-                const extractedCount = lines.length;
+                // Robust Parsing
+                // 1. Remove Markdown code blocks
+                let cleanText = responseText.replace(/```(csv|text)?/gi, '').replace(/```/g, '').trim();
+                
+                // 2. Split into lines and filter
+                const lines = cleanText.split('\n').filter(l => l.includes(';'));
+                
+                if (lines.length === 0) throw new Error('Das Ergebnis der KI konnte nicht korrekt verarbeitet werden (ungültiges Format).');
 
+                let extractedCount = 0;
                 lines.forEach(line => {
-                    const [word, translation] = line.split(';').map(s => s.trim());
-                    if (word && translation) {
-                        window.StorageService.saveVocab(word, translation, subject);
+                    // 3. Remove quotes and split
+                    const parts = line.replace(/"/g, '').split(';');
+                    if (parts.length >= 2) {
+                        const word = parts[0].trim();
+                        const translation = parts[1].trim();
+                        if (word && translation) {
+                            window.StorageService.saveVocab(word, translation, subject);
+                            extractedCount++;
+                        }
                     }
                 });
 

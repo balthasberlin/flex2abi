@@ -558,50 +558,53 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PWA INSTALL LOGIC ---
     let deferredPrompt;
     const installSection = document.getElementById('install-section');
+    const iosInstallSection = document.getElementById('ios-install-guide');
     const installBtn = document.getElementById('install-app-btn');
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-        // Verhindert, dass Chrome den Standard-Mini-Infobar anzeigt
-        e.preventDefault();
-        // Event speichern, damit es später ausgelöst werden kann
-        deferredPrompt = e;
-        // Installations-Bereich anzeigen
-        if (installSection) installSection.style.display = 'block';
-    });
+    // Check if already installed (standalone mode)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    if (!isStandalone) {
+        // Detect iOS
+        const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+        
+        if (isIOS && iosInstallSection) {
+            iosInstallSection.classList.remove('hidden');
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome from showing the mini-infobar
+            e.preventDefault();
+            deferredPrompt = e;
+            // Show install section for supported browsers (Android/Chrome)
+            if (installSection) installSection.classList.remove('hidden');
+        });
+    }
 
     if (installBtn) {
         installBtn.addEventListener('click', async () => {
             if (!deferredPrompt) return;
-
-            // Zeige den Installations-Dialog
             deferredPrompt.prompt();
-
-            // Warte auf die Entscheidung des Nutzers
-            await deferredPrompt.userChoice;
-
-            // Prompt kann nur einmal verwendet werden
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                if (installSection) installSection.classList.add('hidden');
+            }
             deferredPrompt = null;
-
-            // Verstecke die Sektion wieder
-            if (installSection) installSection.style.display = 'none';
         });
     }
 
     window.addEventListener('appinstalled', () => {
-        // App wurde installiert, Verstecke die Sektion
-        if (installSection) installSection.style.display = 'none';
+        if (installSection) installSection.classList.add('hidden');
+        if (iosInstallSection) iosInstallSection.classList.add('hidden');
         deferredPrompt = null;
     });
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./service-worker.js').then(reg => {
-                // Prüfen auf wartende Updates beim Start
-                if (reg.waiting) {
-                    showUpdateBanner(reg);
-                }
+                // Check for waiting updates
+                if (reg.waiting) showUpdateBanner(reg);
 
-                // Listener für neu gefundene Updates
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
@@ -613,7 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }).catch(err => console.warn('Service Worker Fehler:', err));
         });
 
-        // Automatisch neu laden, wenn der neue Service Worker die Kontrolle übernimmt
+        // Auto reload when new SW takes control
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             if (!refreshing) {

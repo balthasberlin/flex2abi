@@ -203,6 +203,36 @@
                             </div>
                         </div>
 
+                        <!-- Vocab Dashboard Stats -->
+                        <div id="vocab-stats-container" class="u-mb-2 hidden">
+                            <div class="vocab-stats-grid">
+                                <div class="stat-card">
+                                    <span class="stat-val" id="stats-total">-</span>
+                                    <span class="stat-label">Gesamt</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-val" id="stats-learning">-</span>
+                                    <span class="stat-label">Lernend</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-val stat-success" id="stats-mastered">-</span>
+                                    <span class="stat-label">Beherrscht</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Search and Filter Bar -->
+                        <div id="vocab-filter-bar" class="vocab-filter-bar u-mb-2 hidden">
+                            <div class="search-input-wrap">
+                                <input type="text" id="vocab-search" placeholder="Vokabel oder Übersetzung suchen...">
+                                <span class="search-icon">🔍</span>
+                            </div>
+                            <select id="vocab-subject-filter" class="subject-filter-select">
+                                <option value="Alle">Alle Fächer</option>
+                                <!-- Dynamic subjects -->
+                            </select>
+                        </div>
+
                         <!-- Hidden File Input -->
                         <!-- 'capture' is for mobile camera support; desktop browsers may show a warning -->
                         <input type="file" id="vocab-file-input" accept="image/*" class="hidden" title="Vokabel-Datei auswählen">
@@ -255,6 +285,22 @@
                             <button id="install-app-btn" class="btn-install">
                                 <span>📲</span> App installieren
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- iOS Installation Guide (fallback) -->
+                    <div id="ios-install-guide" class="card fade-in u-mb-2 u-border-accent-soft hidden">
+                        <div class="u-flex u-gap-1">
+                            <div class="u-font-size-xl">🍏</div>
+                            <div>
+                                <h3 class="u-mt-0 u-mb-0-5">AbiFlex auf dem iPhone</h3>
+                                <p class="u-muted-text u-font-size-sm u-mb-1">Tipper in Safari auf <strong>Teilen</strong> (Quadrat mit Pfeil) und wähle <strong>"Zum Home-Bildschirm"</strong> aus.</p>
+                                <div class="u-flex u-gap-0-6 u-flex-wrap">
+                                    <span class="ios-badge">1. Teilen tippen</span>
+                                    <span class="ios-badge">2. Scrolle nach unten</span>
+                                    <span class="ios-badge">3. "Zum Home-Bildschirm"</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

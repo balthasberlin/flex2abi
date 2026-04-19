@@ -2065,3 +2065,148 @@ body.auth-ready { opacity: 1; }
 
 
 
+
+/* Vocab Dashboard & Filters */
+.vocab-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.stat-val {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--accent-primary);
+}
+
+.stat-val.stat-success {
+    color: var(--success);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.vocab-filter-bar {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.search-input-wrap {
+    position: relative;
+    flex: 1;
+}
+
+.search-input-wrap input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    color: white;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.search-input-wrap input:focus {
+    border-color: var(--accent-primary);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.5;
+    font-size: 0.9rem;
+}
+
+.subject-filter-select {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    color: white;
+    font-size: 0.9rem;
+    outline: none;
+    cursor: pointer;
+    min-width: 150px;
+}
+
+.subject-filter-select:focus {
+    border-color: var(--accent-secondary);
+}
+
+@media (max-width: 600px) {
+    .vocab-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .vocab-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.vocab-row-mastered {
+    background: rgba(46, 204, 113, 0.03);
+}
+
+.vocab-row-mastered td:first-child strong {
+    color: var(--success) !important;
+}
+
+/* iOS PWA Badges */
+.ios-badge {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.btn-install {
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.btn-install:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
+}
+
+.install-banner-content h2 {
+    margin: 0 0 5px 0;
+    font-size: 1.2rem;
+}
+
+.install-banner-content p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
