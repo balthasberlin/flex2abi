@@ -635,6 +635,89 @@ window.UIRenderer = (function() {
                     </div>
                 `;
             }).join('');
+        },
+
+        // --- QUIZ RENDERING ---
+        renderQuizSetup: () => {
+            document.getElementById('quiz-setup').classList.remove('hidden');
+            document.getElementById('quiz-active').classList.add('hidden');
+            document.getElementById('quiz-results').classList.add('hidden');
+        },
+
+        renderQuizQuestion: (q) => {
+            const container = document.getElementById('quiz-question-container');
+            const setupView = document.getElementById('quiz-setup');
+            const activeView = document.getElementById('quiz-active');
+
+            if (!q || !container) return;
+
+            setupView.classList.add('hidden');
+            activeView.classList.remove('hidden');
+
+            // Update Progress
+            const progress = window.QuizService.getProgress();
+            const stats = window.QuizService.getStats();
+            
+            document.getElementById('quiz-progress-text').textContent = `Frage ${stats.results.length + 1} von ${stats.total}`;
+            document.getElementById('quiz-score-text').textContent = `Punkte: ${stats.score}`;
+            document.getElementById('quiz-progress-bar').style.width = `${progress}%`;
+
+            container.innerHTML = `
+                <div class="fade-in">
+                    <h3 class="u-mb-2 u-lh-1-4">${q.question}</h3>
+                    <div class="quiz-options">
+                        ${q.options.map((opt, i) => `
+                            <button class="quiz-option-btn u-w-100" onclick="window.UIAction.submitQuizAnswer(${i}, this)">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        },
+
+        renderQuizResults: (stats) => {
+            const container = document.getElementById('quiz-results');
+            const activeView = document.getElementById('quiz-active');
+            
+            if (!container) return;
+
+            activeView.classList.add('hidden');
+            container.classList.remove('hidden');
+
+            const scoreColor = stats.percentage >= 80 ? 'var(--success)' : (stats.percentage >= 50 ? 'var(--accent-gold)' : 'var(--danger)');
+
+            container.innerHTML = `
+                <div class="card fade-in u-text-center">
+                    <div class="u-font-size-xl u-mb-1" style="font-size: 3rem;">🎓</div>
+                    <h2>Quiz beendet!</h2>
+                    <p class="u-muted-text u-mb-2">Thema: ${stats.topics}</p>
+
+                    <div class="result-stat-circle" style="border-color: ${scoreColor}">
+                        <div class="result-stat-value">${stats.score}/${stats.total}</div>
+                        <div class="result-stat-label">Punkte</div>
+                    </div>
+
+                    <h3 class="u-mb-1-5 u-text-left">Antworten im Überblick</h3>
+                    <div class="u-text-left u-mb-3">
+                        ${stats.results.map(r => `
+                            <div class="quiz-review-item u-mb-1 ${r.isCorrect ? '' : 'u-border-danger-soft'}">
+                                <div class="u-flex u-flex-between u-mb-0-5">
+                                    <div class="quiz-review-q">${r.question}</div>
+                                    <span>${r.isCorrect ? '✅' : '❌'}</span>
+                                </div>
+                                <div class="quiz-review-ans ${r.isCorrect ? 'u-success-text' : 'u-muted-text'}">Deine Wahl: ${r.selected}</div>
+                                ${!r.isCorrect ? `<div class="quiz-review-ans u-success-text">Richtig: ${r.correct}</div>` : ''}
+                                <div class="quiz-explanation">${r.explanation}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <button class="record-btn u-w-100 u-font-700" onclick="window.UIAction.resetQuiz()">
+                        Neues Quiz starten 🔄
+                    </button>
+                </div>
+            `;
         }
 
     };

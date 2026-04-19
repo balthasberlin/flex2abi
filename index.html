@@ -78,6 +78,10 @@
                     <span class="nav-icon">📅</span>
                     <span class="nav-label">Termine</span>
                 </button>
+                <button class="nav-item" data-view="quiz">
+                    <span class="nav-icon">🧠</span>
+                    <span class="nav-label">Lernhilfe</span>
+                </button>
                 <button class="nav-item" data-view="settings">
                     <span class="nav-icon">⚙️</span>
                     <span class="nav-label">Optionen</span>
@@ -396,6 +400,67 @@
                 </div>
             </section>
 
+            <!-- VIEW: QUIZ (LERN-HILFE) -->
+            <div id="view-quiz" class="view-container hidden">
+                <div id="quiz-setup" class="card fade-in">
+                    <div class="u-text-center u-mb-3">
+                        <div class="u-font-size-xl u-mb-1" style="font-size: 3rem;">🧠</div>
+                        <h2>KI-Lernhilfe</h2>
+                        <p class="subtitle">Wähle ein Thema und lass dich von der KI abfragen.</p>
+                    </div>
+
+                    <div class="u-flex-column u-gap-2">
+                        <div class="input-group">
+                            <label class="u-flex u-font-size-xs u-muted-text u-mb-0-5">Was möchtest du lernen?</label>
+                            <input type="text" id="quiz-topic-input" class="modern-input u-w-100" placeholder="z.B. Photosynthese, Französische Revolution...">
+                        </div>
+
+                        <div class="u-flex u-gap-1">
+                            <div class="u-flex-1">
+                                <label class="u-flex u-font-size-xs u-muted-text u-mb-0-5">Anzahl Fragen</label>
+                                <select id="quiz-count-select" class="modern-input u-w-100">
+                                    <option value="5">5 Fragen</option>
+                                    <option value="10" selected>10 Fragen</option>
+                                    <option value="15">15 Fragen</option>
+                                </select>
+                            </div>
+                            <div class="u-flex-1">
+                                <label class="u-flex u-font-size-xs u-muted-text u-mb-0-5">Schwierigkeit</label>
+                                <select id="quiz-diff-select" class="modern-input u-w-100">
+                                    <option value="Basis">Basiswissen</option>
+                                    <option value="Mittel" selected>Mittel</option>
+                                    <option value="Abitur-Niveau">Abitur-Niveau</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button onclick="window.UIAction.startQuiz()" class="record-btn u-w-100 u-font-700 u-mt-1">
+                            Quiz starten ✨
+                        </button>
+                    </div>
+                </div>
+
+                <div id="quiz-active" class="hidden">
+                    <div class="progress-wrapper u-mb-2">
+                        <div class="progress-header">
+                            <span id="quiz-progress-text" class="u-muted-text">Frage 1 von 5</span>
+                            <span id="quiz-score-text" class="u-accent-text u-font-700">Punkte: 0</span>
+                        </div>
+                        <div class="progress-track">
+                            <div id="quiz-progress-bar" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div id="quiz-question-container" class="card fade-in">
+                        <!-- Wird dynamisch befüllt -->
+                    </div>
+                </div>
+
+                <div id="quiz-results" class="hidden">
+                    <!-- Wird dynamisch befüllt -->
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -534,6 +599,7 @@
     <script src="cloud-sync.js?v=3"></script>
     <script src="vocab-service.js?v=1"></script>
     <script src="vocab-trainer.js?v=1"></script>
+    <script src="quiz-service.js?v=1"></script>
     <script src="ui-renderer.js?v=3"></script>
     <script src="ui-actions.js?v=3"></script>
     <script src="app.js?v=6"></script>

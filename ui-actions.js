@@ -630,6 +630,83 @@ window.UIAction = (function() {
                     }, 500);
                 }
             }
+        },
+
+        // --- QUIZ ACTIONS ---
+        startQuiz: async function() {
+            const topic = document.getElementById('quiz-topic-input').value.trim();
+            const count = parseInt(document.getElementById('quiz-count-select').value);
+            const difficulty = document.getElementById('quiz-diff-select').value;
+
+            if (!topic) {
+                this.showVisualFeedback("Bitte gib zuerst ein Thema ein!", "warn");
+                return;
+            }
+
+            this.showVisualFeedback("KI erstellt dein Quiz... Einen Moment Geduld.", "loading");
+
+            try {
+                const questions = await window.QuizService.generateQuestions(topic, count, difficulty);
+                this.hideVisualFeedback();
+                
+                // Render first question
+                if (questions && questions.length > 0) {
+                    window.UIRenderer.renderQuizQuestion(questions[0]);
+                }
+            } catch (err) {
+                console.error("Quiz Start Error:", err);
+                this.showVisualFeedback("Fehler beim Erstellen des Quiz: " + err.message, "error");
+                
+                // Allow user to retry
+                setTimeout(() => this.hideVisualFeedback(), 3000);
+            }
+        },
+
+        submitQuizAnswer: function(index, btn) {
+            const result = window.QuizService.submitAnswer(index);
+            
+            // UI Feedback
+            const container = document.getElementById('quiz-question-container');
+            const btns = container.querySelectorAll('.quiz-option-btn');
+            
+            btns.forEach((b, i) => {
+                b.disabled = true;
+                if (i === result.correctIndex) {
+                    b.classList.add('correct');
+                } else if (i === index && !result.isCorrect) {
+                    b.classList.add('incorrect');
+                }
+            });
+
+            // Show explanation/feedback
+            const feedbackEl = document.createElement('div');
+            feedbackEl.className = 'quiz-explanation fade-in u-mt-1-5 u-p-1 u-border-glass';
+            feedbackEl.style.background = 'rgba(255,255,255,0.02)';
+            feedbackEl.innerHTML = `
+                <div class="u-font-700 u-mb-0-5 ${result.isCorrect ? 'u-success-text' : 'u-danger-text'}">
+                    ${result.isCorrect ? 'Richtig! ✨' : 'Nicht ganz. 🤔'}
+                </div>
+                <div class="u-muted-text u-font-size-sm">${result.explanation}</div>
+                <button class="secondary-btn u-w-100 u-mt-1" onclick="window.UIAction.nextQuizStep(${result.isFinished})">
+                    ${result.isFinished ? 'Zum Ergebnis 🎓' : 'Nächste Frage &rarr;'}
+                </button>
+            `;
+            container.appendChild(feedbackEl);
+        },
+
+        nextQuizStep: function(isFinished) {
+            if (isFinished) {
+                const stats = window.QuizService.getStats();
+                window.UIRenderer.renderQuizResults(stats);
+            } else {
+                const nextQ = window.QuizService.getCurrentQuestion();
+                window.UIRenderer.renderQuizQuestion(nextQ);
+            }
+        },
+
+        resetQuiz: function() {
+            window.QuizService.reset();
+            window.UIRenderer.renderQuizSetup();
         }
     };
 })();

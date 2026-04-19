@@ -131,6 +131,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.NotificationService) window.NotificationService.checkReminders();
         } else if (viewId === 'vocab') {
             if (window.UIRenderer.renderVocabList) window.UIRenderer.renderVocabList();
+        } else if (viewId === 'quiz') {
+            if (window.UIRenderer.renderQuizSetup) window.UIRenderer.renderQuizSetup();
         }
 
         // Update Header Titles
@@ -138,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'recorder': ['Aufnahme-Studio', 'Stimme aufnehmen, transkribieren und intelligent zusammenfassen.'],
             'library': ['Deine Bibliothek', 'Hier findest du all dein Wissen nach Fächern sortiert.'],
             'vocab': ['Vokabel-Scanner', 'Extrahiere Vokabeln aus Fotos und exportiere sie als CSV.'],
+            'quiz': ['KI-Lernhilfe', 'Wähle ein Thema und lass dich von der KI abfragen.'],
             'deadlines': ['Termins-Radar', 'Alle Deadlines, Klausuren und Abgaben auf einen Blick.'],
             'settings': ['System-Einstellungen', 'Konfiguriere Audio-Filter, KI-Verhalten und Cloud-Speicher.']
         };
